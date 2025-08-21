@@ -1,0 +1,8 @@
+<h2>{{ object.name }}</h2>
+<p>Email: {{ object.email }}</p>
+<p>Phone: {{ object.phone }}</p>
+<p>Address: {{ object.address }}</p>
+<p>Max Dogs: {{ object.max_dogs }}</p>
+<p>Active: {{ object.active }}</p>
+<a href="{% url 'fosterhome_update' object.pk %}">Edit</a> |
+<a href="{% url 'fosterhome_delete' object.pk %}">Delete</a>

@@ -1,0 +1,54 @@
+
+
+
+body {
+  background-color: #FFF8F0;
+  color: #333;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.navbar {
+  background-color: #3476d1 !important;
+}
+
+.navbar a, .navbar-brand {
+  color: #fff !important;
+}
+
+.btn-primary {
+  background-color: #4D96FF;
+  border-color: #4D96FF;
+}
+
+.btn-primary:hover {
+  background-color: #3476d1;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 1rem;
+  margin-bottom: 20px;
+}
+
+.card-header {
+  background-color: #6BCB77;
+  color: white;
+  font-weight: bold;
+}
+
+.badge {
+  font-size: 0.9rem;
+}
+
+a.custom-link {
+  color: #0066cc !important;
+  border-bottom: 2px solid transparent !important;
+  text-decoration: none !important;
+}
+
+a.custom-link:hover {
+  color: #004999 !important;
+  border-bottom: 2px solid #0066cc !important;
+}
+

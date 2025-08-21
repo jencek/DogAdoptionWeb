@@ -1,0 +1,83 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<style>
+  /* Reduce card size */
+  .card {
+    font-size: 0.9rem; /* Smaller text */
+    padding: 0.5rem;  /* Less padding */
+  }
+  .card-body {
+    padding: 0.75rem; /* Less space inside */
+  }
+  .card-title {
+    font-size: 1rem;  /* Smaller title */
+    margin-bottom: 0.5rem;
+  }
+  .btn-sm {
+    padding: 0.15rem 0.4rem; /* Smaller buttons */
+    font-size: 0.8rem;
+  }
+</style>
+
+<div class="container mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Foster Homes</h1>
+    <a href="{% url 'fosterhome_create' %}" class="btn btn-primary">Add New</a>
+  </div>
+
+  <form method="get" class="input-group mb-4" role="search">
+    <input type="text" name="q" class="form-control" placeholder="Search by name or email..." value="{{ request.GET.q }}">
+    <button type="submit" class="btn btn-outline-secondary">Search</button>
+  </form>
+
+  {% if object_list %}
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+      {% for home in object_list %}
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">
+                <a href="{% url 'fosterhome_detail' home.pk %}">{{ home.name }}</a>
+              </h5>
+              <p class="card-text">
+                {% if home.address %}<strong>Address:</strong> {{ home.address }}<br>{% endif %}
+                {% if home.phone %}<strong>Phone:</strong> {{ home.phone }}<br>{% endif %}
+                {% if home.email %}<strong>Email:</strong> {{ home.email }}{% endif %}
+              </p>
+              <a href="{% url 'fosterhome_update' home.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+              <a href="{% url 'fosterhome_delete' home.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No foster homes found.</p>
+  {% endif %}
+
+  <nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        </li>
+      {% endif %}
+
+      <li class="page-item active">
+        <span class="page-link">{{ page_obj.number }}</span>
+      </li>
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}
+
+
+

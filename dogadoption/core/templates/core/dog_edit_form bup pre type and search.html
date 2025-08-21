@@ -1,0 +1,150 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<h2>Edit Dog</h2>
+
+{% if object.image %}
+  <div class="mb-3">
+    <img src="{{ object.image.url }}" alt="Dog image" style="max-width: 300px; height: auto; border-radius: 10px;">
+  </div>
+{% endif %}
+
+<a href="{% url 'medical_record_list' object.id %}" class="btn btn-outline-primary mb-3">View Medical Records</a>
+
+
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+
+
+<label for="dog-search">Bonded Pair Dog</label>
+<input type="text" id="dog-search" placeholder="Type to search..." 
+       class="form-control"
+       {% if object.bonded_pair_dog %}
+         value="{{ object.bonded_pair_dog.name }}"
+       {% endif %}>
+
+<!-- hidden input that Django expects -->
+<input type="hidden" id="bonded_pair_dog" 
+       name="bonded_pair_dog" 
+       {% if object.bonded_pair_dog %}
+         value="{{ object.bonded_pair_dog.id }}"
+       {% endif %}>
+
+<ul id="dog-results" class="list-group"></ul>
+<button type="button" id="clear-bonded" class="btn btn-sm btn-outline-danger mt-2">
+    Clear Bonded Dog
+</button>
+
+
+
+
+
+    <h3>Existing Images</h3>
+    <div id="dog-images">
+        {% for img in object.dogurl_set.all %}
+            <div class="dog-image" data-id="{{ img.id }}" style="display:inline-block; margin:10px;">
+                <img src="{{ img.image.url  }}" style="max-width:150px; max-height:150px;">
+                <button type="button" class="delete-image" style="display:block; color:red;">❌</button>
+            </div>
+        {% endfor %}
+    </div>
+
+
+
+
+
+ <!--    <label for="id_new_images">Add New Images:</label>
+    {{ form.new_images }}
+-->
+    <button type="submit" class="btn btn-success mt-3">Save</button>
+</form>
+
+<hr>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.delete-image').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const imageDiv = btn.closest('.dog-image');
+            const imageId = imageDiv.dataset.id;
+            if (confirm('Delete this image?')) {
+                fetch(`/dog-image/${imageId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        imageDiv.remove();
+                    } else {
+                        alert('Failed to delete image.');
+                    }
+                });
+            }
+        });
+    });
+});
+
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    const input = document.getElementById("dog-search");
+    const hiddenInput = document.getElementById("bonded_pair_dog");
+    const resultsList = document.getElementById("dog-results");
+    let timeout = null;
+
+    input.addEventListener("input", function() {
+        clearTimeout(timeout);
+        const query = input.value.trim();
+        if (!query) {
+            resultsList.innerHTML = "";
+            return;
+        }
+
+        timeout = setTimeout(() => {
+            fetch(`/dog-search/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    resultsList.innerHTML = "";
+                    data.forEach(dog => {
+                        const li = document.createElement("li");
+                        li.textContent = dog.name;
+                        li.classList.add("list-group-item");
+                        li.style.cursor = "pointer";
+                        li.addEventListener("click", () => {
+                            input.value = dog.name;        // display name
+                            hiddenInput.value = dog.id;    // store ID
+                            resultsList.innerHTML = "";
+                        });
+                        resultsList.appendChild(li);
+                    });
+                });
+        }, 300);
+    });
+});
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const hiddenInput = document.getElementById("bonded_pair_dog");
+    const searchInput = document.getElementById("dog-search");
+    const clearBtn = document.getElementById("clear-bonded");
+
+    clearBtn.addEventListener("click", function () {
+        hiddenInput.value = "";
+        searchInput.value = "";
+    });
+});
+</script>
+
+
+
+{% endblock %}

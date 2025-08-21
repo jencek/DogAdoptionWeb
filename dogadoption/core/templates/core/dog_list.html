@@ -1,0 +1,127 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>Dog List</h2>
+
+<form method="get" class="mb-4 row g-2">
+    <div class="col-md-3">
+        <input type="text" name="name" value="{{ name_query }}" class="form-control" placeholder="Search by name">
+    </div>
+
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">All statuses</option>
+            <option value="Available" {% if status_query == 'Available' %}selected{% endif %}>Available</option>
+            <option value="Adopted" {% if status_query == 'Adopted' %}selected{% endif %}>Adopted</option>
+            <option value="Pending" {% if status_query == 'Pending' %}selected{% endif %}>Pending</option>
+            <option value="Inactive" {% if status_query == 'Inactive' %}selected{% endif %}>Inactive</option>
+            <option value="Fostered" {% if status_query == 'Fostered' %}selected{% endif %}>Fostered</option>
+            <option value="Adopted-Ret" {% if status_query == 'Fostered' %}selected{% endif %}>Adopted-Ret</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Creation Date From</label>
+        <input type="date" name="creation_date_from" value="{{ creation_date_from }}" class="form-control">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Creation Date To</label>
+        <input type="date" name="creation_date_to" value="{{ creation_date_to }}" class="form-control">
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Adoption Date From</label>
+        <input type="date" name="adoption_date_from" value="{{ adoption_date_from }}" class="form-control">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Adoption Date To</label>
+        <input type="date" name="adoption_date_to" value="{{ adoption_date_to }}" class="form-control">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Update Date From</label>
+        <input type="date" name="update_date_from" value="{{ update_date_from }}" class="form-control">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Update Date To</label>
+        <input type="date" name="update_date_to" value="{{ update_date_to }}" class="form-control">
+    </div>
+ <div class="col-md-3 form-check">
+    <input type="checkbox" name="bonded_pair" id="bonded_pair" class="form-check-input" {% if bonded_pair %}checked{% endif %}>
+    <label class="form-check-label" for="bonded_pair">Bonded Pair</label>
+</div>
+
+
+    <div class="col-md-12">
+        <button type="submit" class="btn btn-outline-primary mt-2">Search</button>
+    </div>
+</form>
+
+<a href="{% url 'dog_add' %}" class="btn btn-success mb-3">Add Dog</a>
+
+<ul class="list-group">
+    {% for dog in dogs %}
+    <li class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+            <a class="custom-link" href="{% url 'dog_readonly' dog.pk %}">
+                {{ dog.name }} - {{ dog.breed }} ({{ dog.status }})
+            </a>
+            <span>
+                <a class="btn btn-sm btn-warning" href="{% url 'dog_edit' dog.pk %}">Edit</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'dog_delete' dog.pk %}">Delete</a>
+            </span>
+        </div>
+
+        {% if dog.bonded_pair_dog %}
+        <ul style="margin-left: 20px; list-style-type: none; padding-left: 0;">
+            <li style="background-color: #f8f9fa; padding: 5px; border-radius: 4px;">
+                <a class="custom-link" href="{% url 'dog_readonly' dog.bonded_pair_dog.pk %}">
+                    Bonded pair → {{ dog.bonded_pair_dog.name }} - {{ dog.bonded_pair_dog.breed }} ({{ dog.bonded_pair_dog.status }})
+                </a>
+            </li>
+        </ul>
+        {% endif %}
+    </li>
+    {% empty %}
+    <li class="list-group-item">No dogs found.</li>
+    {% endfor %}
+</ul>
+
+
+<nav aria-label="Page navigation">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page=1&{{ query_string }}">First</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ query_string }}">Previous</a>
+      </li>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}
+        <li class="page-item active">
+          <span class="page-link">{{ num }}</span>
+        </li>
+      {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ num }}&{{ query_string }}">{{ num }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ query_string }}">Next</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}">Last</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+
+{% endblock %}
+
+
+
+

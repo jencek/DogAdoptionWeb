@@ -1,0 +1,391 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<h2 class="mb-3">Edit {{ form.name }}</h2>
+
+{% if object.image %}
+  <div class="mb-3">
+    <img src="{{ object.image.url }}" alt="Dog image" style="max-width: 300px; height: auto; border-radius: 10px;">
+  </div>
+{% endif %}
+
+<a href="{% url 'medical_record_list' object.id %}" class="btn btn-outline-primary mb-3">View Medical Records</a>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- Name -->
+    <div class="mb-3">
+        {{ form.name.label_tag }} {{ form.name }}
+    </div>
+
+    <!-- URL -->
+    <div class="mb-3">
+        {{ form.url.label_tag }} {{ form.url }}
+    </div>
+
+    <!-- Age -->
+    <div class="mb-3">
+        {{ form.age.label_tag }} {{ form.age }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.nameext.label_tag }} {{ form.nameext }}
+    </div>
+       <div class="mb-3">
+        {{ form.breed.label_tag }} {{ form.breed }}
+    </div>
+
+<div class="mb-3">
+        {{ form.sex.label_tag }} {{ form.sex }}
+    </div>
+<div class="mb-3">
+        {{ form.size.label_tag }} {{ form.size }}
+    </div>
+    <div class="mb-3">
+        {{ form.walker_capability.label_tag }} {{ form.walker_capability }}
+    </div>
+   <div class="mb-3">
+        {{ form.walk_guidance.label_tag }} {{ form.walk_guidance }}
+    </div>
+
+
+   <!--
+
+<li>nameext<ul class="errorlist" id="id_nameext_error"><li>This field is required.</li></ul></li><li>sex<ul class="errorlist" id="id_sex_error"><li>This field is required.</li></ul></li><li>size<ul class="errorlist" id="id_size_error"><li>This field is required.</li></ul></li><li>walker_capability<ul class="errorlist" id="id_walker_capability_error"><li>This field is required.</li></ul></li><li>walk_guidance<ul class="errorlist" id="id_walk_guidance_error"><li>This field is required.</li></ul></li></ul>
+-->
+
+
+
+    <!-- Status -->
+    <div class="mb-3">
+        {{ form.status.label_tag }} {{ form.status }}
+    </div>
+
+    <!-- Bonded Pair Dog (search widget, positioned after status) -->
+ <label for="dog-search">Bonded Pair Dog</label>
+<input type="text" id="dog-search" placeholder="Type to search..." 
+       class="form-control"
+       {% if object.bonded_pair_dog %}
+         value="{{ object.bonded_pair_dog.name }}"
+       {% endif %}>
+
+<!-- hidden input that Django expects -->
+<input type="hidden" id="bonded_pair_dog" 
+       name="bonded_pair_dog" 
+       {% if object.bonded_pair_dog %}
+         value="{{ object.bonded_pair_dog.id }}"
+       {% endif %}>
+
+<ul id="dog-results" class="list-group"></ul>
+
+<!--<button type="button" id="clear-bonded" class="btn btn-sm btn-outline-danger mt-2">
+    Clear Bonded
+</button>
+-->
+<br>
+    <!-- Notes -->
+    <div class="mb-3">
+        {{ form.notes.label_tag }} {{ form.notes }}
+    </div>
+
+ 
+
+    <!-- Adoption Date -->
+    <div class="mb-3">
+        {{ form.adoption_date.label_tag }} {{ form.adoption_date }}
+    </div>
+
+    <!-- Arrival Date -->
+    <div class="mb-3">
+        {{ form.arrival_date.label_tag }} {{ form.arrival_date }}
+    </div>
+
+    <!-- Colour -->
+    <div class="mb-3">
+        {{ form.colour.label_tag }} {{ form.colour }}
+    </div>
+
+
+
+
+
+
+    <div class="mb-3">
+        {{ form.requires_companion_dog.label_tag }} {{ form.requires_companion_dog }}
+    </div>    
+
+
+
+
+   <!-- <div class="mb-3">
+        {{ form.friend_dog1.label_tag }} {{ form.friend_dog1 }}
+    </div>   
+-->
+
+
+<div class="mb-3">
+        <label for="id_colour">Colour:</label> <input type="text" name="colour" value="White" class="form-control" maxlength="50" id="id_colour">
+    </div>
+
+
+<div class="mb-3"><label for="friend-dogs">Dog Friends :</label>
+<div class="mb3">
+<input type="text" id="friend-dog1-search"  {% if object.friend_dog1 %}
+         value="{{ object.friend_dog1.name }}"
+       {% endif %}>
+<input type="hidden" id="friend_dog1" name="friend_dog1" {% if object.friend_dog1 %}
+         value="{{ object.friend_dog1.id }}"
+       {% endif %}>
+<ul id="friend-dog1-results" class="list-group"></ul>
+</div>
+
+<div class="mb3">
+<input type="text" id="friend-dog2-search"  {% if object.friend_dog2 %}
+         value="{{ object.friend_dog2.name }}"
+       {% endif %}>
+<input type="hidden" id="friend_dog2" name="friend_dog2" {% if object.friend_dog2 %}
+         value="{{ object.friend_dog2.id }}"
+       {% endif %}>
+<ul id="friend-dog2-results" class="list-group"></ul>
+</div>
+
+<div class="mb3">
+<input type="text" id="friend-dog3-search"  {% if object.friend_dog3 %}
+         value="{{ object.friend_dog3.name }}"
+       {% endif %}>
+<input type="hidden" id="friend_dog3" name="friend_dog3" {% if object.friend_dog3 %}
+         value="{{ object.friend_dog3.id }}"
+       {% endif %}>
+<ul id="friend-dog3-results" class="list-group"></ul>
+
+</div>
+</div>
+<br>
+
+<!--
+<div class="mb-3">
+    <label for="friend-dog1-search">Friend Dog 1</label>
+<input type="text" id="friend-dog1-search"  {% if object.friend_dog1 %}
+         value="{{ object.friend_dog1.name }}"
+       {% endif %}>
+<input type="hidden" id="friend_dog1" name="friend_dog1" {% if object.friend_dog1 %}
+         value="{{ object.friend_dog1.id }}"
+       {% endif %}>
+<ul id="friend-dog1-results" class="list-group"></ul>
+
+</div>
+
+
+<div class="mb-3">
+    <label for="friend-dog2-search">Friend Dog 2</label>
+<input type="text" id="friend-dog2-search"  {% if object.friend_dog2 %}
+         value="{{ object.friend_dog2.name }}"
+       {% endif %}>
+<input type="hidden" id="friend_dog2" name="friend_dog2" {% if object.friend_dog2 %}
+         value="{{ object.friend_dog2.id }}"
+       {% endif %}>
+<ul id="friend-dog2-results" class="list-group"></ul>
+
+</div>
+
+
+
+<div class="mb-3">
+    <label for="friend-dog3-search">Friend Dog 3</label>
+<input type="text" id="friend-dog3-search"  {% if object.friend_dog3 %}
+         value="{{ object.friend_dog3.name }}"
+       {% endif %}>
+<input type="hidden" id="friend_dog3" name="friend_dog3" {% if object.friend_dog3 %}
+         value="{{ object.friend_dog3.id }}"
+       {% endif %}>
+<ul id="friend-dog3-results" class="list-group"></ul>
+
+</div>
+
+-->
+        
+ <div class="mb-3">
+        {{ form.local_created_dog.label_tag }} {{ form.local_created_dog }}
+    </div>
+
+
+    <!-- Creation Date -->
+    <div class="mb-3">
+        {{ form.creation_date.label_tag }} {{ form.creation_date }}
+    </div>
+
+    <!-- Update Date -->
+    <div class="mb-3">
+        {{ form.update_date.label_tag }} {{ form.update_date }}
+    </div>
+
+    <!-- Existing Images -->
+    <h3>Existing Images</h3>
+    <div id="dog-images">
+        {% for img in object.dogurl_set.all %}
+            <div class="dog-image" data-id="{{ img.id }}" style="display:inline-block; margin:10px;">
+                <img src="{{ img.image.url }}" style="max-width:150px; max-height:150px;">
+                <button type="button" class="delete-image" style="display:block; color:red;">❌</button>
+            </div>
+        {% endfor %}
+    </div>
+       <!-- New Images (positioned after notes) -->
+    <div class="mb-3">
+        <label for="{{ form.new_images.id_for_label }}">Add New Images</label>
+        {{ form.new_images }}
+    </div>
+
+    <button type="submit" class="btn btn-success mt-3">Save</button>
+</form>
+
+<hr>
+
+<!-- Bonded Pair Dog Search JS -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const input = document.getElementById("dog-search");
+    const hiddenInput = document.getElementById("bonded_pair_dog");
+    const resultsList = document.getElementById("dog-results");
+    let timeout = null;
+
+    input.addEventListener("input", function() {
+        clearTimeout(timeout);
+        const query = input.value.trim();
+        if (!query) {
+            // ✅ If cleared, also clear hidden field
+            hiddenInput.value = "";
+            resultsList.innerHTML = "";
+            return;
+        }
+
+        // if (!query) {
+        //     resultsList.innerHTML = "";
+        //     return;
+        // }
+
+        timeout = setTimeout(() => {
+            fetch(`/dog-search/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    resultsList.innerHTML = "";
+                    data.forEach(dog => {
+                        const li = document.createElement("li");
+                        li.textContent = dog.name;
+                        li.classList.add("list-group-item");
+                        li.style.cursor = "pointer";
+                        li.addEventListener("click", () => {
+                            input.value = dog.name;        // display name
+                            hiddenInput.value = dog.id;    // store ID
+                            resultsList.innerHTML = "";
+                        });
+                        resultsList.appendChild(li);
+                    });
+                });
+        }, 300);
+    });
+});
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const hiddenInput = document.getElementById("bonded_pair_dog");
+    const searchInput = document.getElementById("dog-search");
+    const clearBtn = document.getElementById("clear-bonded");
+
+    clearBtn.addEventListener("click", function () {
+        hiddenInput.value = "";
+        searchInput.value = "";
+    });
+});
+</script>
+
+<!-- Delete Image JS -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.delete-image').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const imageDiv = btn.closest('.dog-image');
+            const imageId = imageDiv.dataset.id;
+            if (confirm('Delete this image?')) {
+                fetch(`/dog-image/${imageId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        imageDiv.remove();
+                    } else {
+                        alert('Failed to delete image.');
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
+
+
+<script>
+
+function setupDogSearch(inputId, hiddenId, resultsId) {
+    const input = document.getElementById(inputId);
+    const hiddenInput = document.getElementById(hiddenId);
+    const resultsList = document.getElementById(resultsId);
+    let timeout = null;
+
+    if (!input || !hiddenInput || !resultsList) return; // safety
+
+    // Typing in the search field
+    input.addEventListener("input", function() {
+        clearTimeout(timeout);
+        const query = input.value.trim();
+        if (!query) {
+            resultsList.innerHTML = "";
+            hiddenInput.value = "";   // clear hidden field if cleared
+            return;
+        }
+
+        timeout = setTimeout(() => {
+            fetch(`/dog-search/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    resultsList.innerHTML = "";
+                    data.forEach(dog => {
+                        const li = document.createElement("li");
+                        li.textContent = dog.name;
+                        li.classList.add("list-group-item");
+                        li.style.cursor = "pointer";
+                        li.addEventListener("click", () => {
+                            input.value = dog.name;      // show name in text field
+                            hiddenInput.value = dog.id;  // store ID in hidden field
+                            resultsList.innerHTML = "";
+                        });
+                        resultsList.appendChild(li);
+                    });
+                });
+        }, 300);
+    });
+}
+
+
+
+
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    setupDogSearch("friend-dog1-search", "friend_dog1", "friend-dog1-results");
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    setupDogSearch("friend-dog2-search", "friend_dog2", "friend-dog2-results");
+});
+document.addEventListener("DOMContentLoaded", function() {
+    setupDogSearch("friend-dog3-search", "friend_dog3", "friend-dog3-results");
+});
+</script>
+{% endblock %}

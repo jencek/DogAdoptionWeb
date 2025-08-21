@@ -1,0 +1,193 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<h2>View Dog</h2>
+<br><a href="{{ back_url }}" class="btn btn-outline-primary">← Back to list</a><br><br>
+{% if object.image %}
+  <div class="mb-3">
+    <img src="{{ object.image.url }}" alt="Dog image" style="max-width: 300px; height: auto; border-radius: 10px;">
+  </div>
+{% endif %}
+{% if foster_person %}
+<div><h5>Fostered by: {{ foster_person }}</h5></div><br>
+{% endif %}
+{% if adopter_person %}
+<div><h5>Adopted by: {{ adopter_person }}</h5></div><br>
+{% endif %}
+
+
+
+
+
+<form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+    {% csrf_token %}
+    <!--{{ form.as_p }} -->
+
+   <!-- Name -->
+    <div class="mb-3">
+        {{ form.name.label_tag }} {{ form.name }}
+    </div>
+
+    <!-- URL -->
+    <div class="mb-3">
+        {{ form.url.label_tag }} {{ form.url }}
+    </div>
+
+    <!-- Age -->
+    <div class="mb-3">
+        {{ form.age.label_tag }} {{ form.age }}
+    </div>
+
+   <!-- <div class="mb-3">
+        {{ form.nameext.label_tag }} {{ form.nameext }}
+    </div>
+  -->
+       <div class="mb-3">
+        {{ form.breed.label_tag }} {{ form.breed }}
+    </div>
+
+<div class="mb-3">
+        {{ form.sex.label_tag }} {{ form.sex }}
+    </div>
+<div class="mb-3">
+        {{ form.size.label_tag }} {{ form.size }}
+
+    </div>
+
+    <!-- Status -->
+    <div class="mb-3">
+        {{ form.status.label_tag }} {{ form.status }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.walker_capability.label_tag }} {{ form.walker_capability }}
+    </div>
+   <div class="mb-3">
+        {{ form.walk_guidance.label_tag }} {{ form.walk_guidance }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.requires_companion_dog.label_tag }} {{ form.requires_companion_dog }}
+    </div>    
+
+
+
+
+
+<div class="mb-3">
+        <label for="id_breed">Breed:</label> <input type="text" name="breed" value="Siberian Husky" maxlength="100" disabled="" id="id_breed">
+    </div>
+
+
+
+
+    <!-- <button class="btn btn-success" type="submit">Save</button> -->
+
+<div class="mb-3">
+<label for="bonded_pair_dog">{{ form.bonded_pair_dog.label_tag }} </label><input type="text" name="bonded_pair_dog" value= " {{ object.bonded_pair_dog }} "  maxlength="50" required="" disabled="" >
+</div>
+
+
+
+<div class="mb-3"><label for="id_status">Dog Friends</label>
+<div class="mb-3">
+<input type="text" name="friend_dog1" value= '{{ object.friend_dog1 }} ' maxlength="100" required="" disabled="" >
+</div>
+
+<div class="mb-3">
+<input type="text" name="friend_dog2" value= '{{ object.friend_dog2 }} '  maxlength="100" required="" disabled="" >
+</div>
+
+<div class="mb-3">
+<input type="text" name="friend_dog3" value= '{{ object.friend_dog3 }} '  maxlength="100" required="" disabled="" >
+</div>
+</div>
+
+
+
+
+<!--
+<div class="mb-3">
+<label for="id_status">{{ form.friend_dog1.label_tag }} </label>
+<input type="text" name="friend_dog1" value= '{{ object.friend_dog1 }} ' maxlength="100" required="" disabled="" >
+</div>
+
+<div class="mb-3">
+<label for="id_status">{{ form.friend_dog2.label_tag }} </label>
+<input type="text" name="friend_dog2" value= '{{ object.friend_dog2 }} '  maxlength="100" required="" disabled="" >
+</div>
+
+<div class="mb-3">
+<label for="id_status">{{ form.friend_dog3.label_tag }} </label>
+<input type="text" name="friend_dog3" value= '{{ object.friend_dog3 }} '  maxlength="100" required="" disabled="" >
+</div>
+-->
+<br>
+    <!-- Notes -->
+    <div class="mb-3">
+        {{ form.notes.label_tag }} {{ form.notes }}
+    </div>
+
+ 
+
+    <!-- Adoption Date -->
+    <div class="mb-3">
+        {{ form.adoption_date.label_tag }} {{ form.adoption_date }}
+    </div>
+
+    <!-- Arrival Date -->
+    <div class="mb-3">
+        {{ form.arrival_date.label_tag }} {{ form.arrival_date }}
+    </div>
+
+    <!-- Colour -->
+    <div class="mb-3">
+        {{ form.colour.label_tag }} {{ form.colour }}
+    </div>
+
+
+   <!-- Creation Date -->
+    <div class="mb-3">
+        {{ form.creation_date.label_tag }} {{ form.creation_date }}
+    </div>
+
+    <!-- Update Date -->
+    <div class="mb-3">
+        {{ form.update_date.label_tag }} {{ form.update_date }}
+    </div>
+
+
+
+
+
+
+</form>
+{% if dogurls %}
+  <hr>
+  <h4>Additional Images</h4>
+  <table class="table table-bordered table-striped">
+    <thead class="table-light">
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Preview</th>
+        <th scope="col">URL</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for link in dogurls %}
+        <tr>
+          <th scope="row">{{ forloop.counter }}</th>
+          <td>
+            <img src="{{ MEDIA_URL }}{{ link.image }}" alt="Image {{ forloop.counter }}" style="max-height: 100px; max-width: 150px;">
+          </td>
+          <td>
+            <a href="{{ MEDIA_URL }}{{ link.image }}" target="_blank">{{ MEDIA_URL }}{{ link.image }}</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+
+{% endblock %}

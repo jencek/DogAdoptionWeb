@@ -1,0 +1,57 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+  <h2>Dog Walks</h2>
+
+  <a class="btn btn-primary" href="{% url 'dogwalk_add' %}">Add Walk</a>
+
+
+<form method="get" class="mb-3 d-flex">
+    <input type="text" name="q" value="{{ search_query }}" class="form-control me-2" placeholder="Search by dog or walker...">
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+</form>
+
+  <table class="table table-striped mt-3">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Dog</th>
+        <th>Walker</th>
+        <th>Duration</th>
+        <th>Buddy</th>
+        <th>Style</th>
+        <th>Friendliness</th>
+        <th>Notes</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for walk in walks %}
+        <tr>
+          <td>{{ walk.walk_date }}</td>
+          <td>{{ walk.dog.name }}</td>
+          <td>{{ walk.walker }}</td>
+          <td>{{ walk.duration_minutes }} min</td>
+          <td>
+  {% if walk.buddy_dog %}
+    {{ walk.buddy_dog.name }}
+  {% else %}
+    -
+  {% endif %}
+</td>
+          <td>{{ walk.walking_style }}</td>
+          <td>{{ walk.friendliness }}</td>
+          <td>{{ walk.notes|truncatechars:50 }}</td>
+          <td>
+            <a href="{% url 'dogwalk_edit' walk.pk %}">Edit</a> |
+            <a href="{% url 'dogwalk_delete' walk.pk %}">Delete</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="9">No dog walks recorded.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

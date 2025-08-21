@@ -1,0 +1,36 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card" style="background-color: #eaf4fb; color: #0a3c5f; border-color: #b3d4ef;">
+    <div class="card-header" style="background-color: #d6e9f8; border-bottom: 1px solid #b3d4ef;">
+      <h4 class="mb-1" style="background-color: #eaf4fb; color: #0a3c5f; border-color: #b3d4ef;">
+        {% if form.instance.pk %}Edit{% else %}Add{% endif %} Medical Record for {{ dog.name }}
+      </h4>
+    </div>
+    <div class="card-body">
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+          <div class="mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label" style="color: #1a5276;">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+              <div class="form-text" style="color: #3d6d8a;">{{ field.help_text }}</div>
+            {% endif %}
+            {% for error in field.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'medical_record_list' dog.id %}" class="btn btn-outline-primary">Back to Records</a>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

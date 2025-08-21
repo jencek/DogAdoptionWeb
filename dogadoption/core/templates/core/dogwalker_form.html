@@ -1,0 +1,13 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<h2>{{ view.object.pk|yesno:"Edit,Add" }} Dog Walker</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save</button>
+</form>
+<a href="{% url 'dogwalker_list' %}">Back</a>
+
+{% endblock %}
+

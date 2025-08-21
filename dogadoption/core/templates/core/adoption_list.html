@@ -1,0 +1,43 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>Adoptions</h2>
+<form method="get" class="mb-3 d-flex">
+    <input type="text" name="q" value="{{ search_query }}" class="form-control me-2" placeholder="Search by dog or adopter...">
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+</form>
+
+<a href="{% url 'adoption_add' %}">Add Adoption</a>
+<ul class="list-group">
+    {% for adoption in adoptions %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        {{ adoption.dog.name }} adopted by {{ adoption.adopter.first_name }} on {{ adoption.adoption_date }}
+        <span>
+            <a class="btn btn-sm btn-warning" href="{% url 'adoption_edit' adoption.pk %}">Edit</a>
+            <a class="btn btn-sm btn-danger" href="{% url 'adoption_delete' adoption.pk %}">Delete</a>
+        </span>
+    </li>
+    {% empty %}
+    <li class="list-group-item">No adoptions found.</li>
+    {% endfor %}
+</ul>
+<div class="pagination">
+  <nav>
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+      {% endif %}
+
+      <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}
+
+
+
+
+

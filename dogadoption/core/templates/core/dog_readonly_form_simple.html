@@ -1,0 +1,24 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">View Details for {{ dog.name }}</h4>
+    </div>
+    <div class="card-body">
+      <form>
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+          </div>
+        {% endfor %}
+
+        <a href="{% url 'dog_list' %}" class="btn btn-outline-secondary">Back to List</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

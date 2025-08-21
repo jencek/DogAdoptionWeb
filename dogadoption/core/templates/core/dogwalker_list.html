@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  /* Reduce card size */
+  .card {
+    font-size: 0.9rem; /* Smaller text */
+    padding: 0.5rem;  /* Less padding */
+  }
+  .card-body {
+    padding: 0.75rem; /* Less space inside */
+  }
+  .card-title {
+    font-size: 1rem;  /* Smaller title */
+    margin-bottom: 0.5rem;
+  }
+  .btn-sm {
+    padding: 0.15rem 0.4rem; /* Smaller buttons */
+    font-size: 0.8rem;
+  }
+</style>
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Dog Walkers</h2>
+    <a href="{% url 'dogwalker_add' %}" class="btn btn-primary">Add Dog Walker</a>
+  </div>
+
+  <form method="get" class="input-group mb-4" role="search">
+    <input type="text" name="q" class="form-control" placeholder="Search by name or email..." value="{{ request.GET.q }}">
+    <button type="submit" class="btn btn-outline-secondary">Search</button>
+  </form>
+
+
+  <div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for walker in walkers %}
+      <div class="col-12 col-sm-6 col-md-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">{{ walker.first_name }} {{ walker.last_name }} ({{walker.experience}})</h5>
+            <p class="card-text">
+              <strong>Email:</strong> {{ walker.email }}<br>
+              {% if walker.phone %}<strong>Phone:</strong> {{ walker.phone }}<br>{% endif %}
+              {% if walker.city %}<strong>City:</strong> {{ walker.city }}{% endif %}
+            </p>
+            <a href="{% url 'dogwalker_edit' walker.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+            <a href="{% url 'dogwalker_delete' walker.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p>No dog walkers found.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

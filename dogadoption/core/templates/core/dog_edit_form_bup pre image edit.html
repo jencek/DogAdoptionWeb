@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<h2>Edit Dog</h2>
+
+{% if object.image %}
+  <div class="mb-3">
+    <img src="{{ object.image.url }}" alt="Dog image" style="max-width: 300px; height: auto; border-radius: 10px;">
+  </div>
+{% endif %}
+
+<a href="{% url 'medical_record_list' object.id %}" class="btn btn-outline-primary mb-3">View Medical Records</a>
+
+<form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn btn-success" type="submit">Save</button>
+</form>
+{% if dogurls %}
+  <hr>
+  <h4>Additional Images</h4>
+  <table class="table table-bordered table-striped">
+    <thead class="table-light">
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Preview</th>
+        <th scope="col">URL</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for link in dogurls %}
+        <tr>
+          <th scope="row">{{ forloop.counter }}</th>
+          <td>
+            <img src="{{ MEDIA_URL }}{{ link.url }}" alt="Image {{ forloop.counter }}" style="max-height: 100px; max-width: 150px;">
+          </td>
+          <td>
+            <a href="{{ MEDIA_URL }}{{ link.url }}" target="_blank">{{ MEDIA_URL }}{{ link.url }}</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+
+{% endblock %}

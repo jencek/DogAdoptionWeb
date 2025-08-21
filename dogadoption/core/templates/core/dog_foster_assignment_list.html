@@ -1,0 +1,41 @@
+{% extends 'core/base.html' %}
+{% block content %}
+  <h2>Dog Foster Assignments</h2>
+<form method="get" class="mb-3 d-flex">
+    <input type="text" name="q" value="{{ search_query }}" class="form-control me-2" placeholder="Search by dog or foster name...">
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+</form>
+  <a href="{% url 'dog_foster_assignment_add' %}" class="btn btn-primary mb-3">Add New Assignment</a>
+
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Dog</th>
+        <th>Foster Home</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Notes</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for assignment in assignments %}
+        <tr>
+          <td>{{ assignment.dog.name }}</td>
+          <td>{{ assignment.foster.name }}</td>
+          <td>{{ assignment.start_date }}</td>
+          <td>{{ assignment.end_date|default:"–" }}</td>
+          <td>{{ assignment.notes|default:"–" }}</td>
+          <td>
+            <a href="{% url 'dog_foster_assignment_edit' assignment.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+            <a href="{% url 'dog_foster_assignment_delete' assignment.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="6">No assignments found.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
