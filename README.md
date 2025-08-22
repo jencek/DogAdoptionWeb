@@ -4,5 +4,11 @@ Key concepts are:
   Foster carers and foster relatghionships with dogs
   Adopting Families and adoption relationships tho dogs
   Dog walkers and walks taken with dogs - allows collection of dog walking ffrequency and durations
-  DOgh medical/vet records
+  Dog medical/vet records
+
+
+  Todo:
+  1) remove dog friend and bonded dog relationships if the referenced dog is adopted or made inactive
+  2) add reporting of dog walk time/frequency) per week or other time fram.
+  3) add reporting for added/removed dogs over time. Adds/removes/net
   
