@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-
+{% load tz %}
 {% block content %}
 {% if user.is_authenticated %}
 <form method="post" action="{% url 'logout' %}" style="display: inline;">
@@ -12,6 +12,7 @@
 {% endif %}
 <h2>Welcome to the Dog Adoption Agency System</h2>
 <br>
+
 <h5>Dogs Added in the last 3 days</h5>
 <ul class="list-group">
     {% for dog in dogs %}
@@ -62,6 +63,41 @@
     </ul>
   </nav>
 </div>
+
+<br>
+<h4>Recent Dog Changes</h4>
+
+<style>
+details {
+  margin: 0.3em 0;
+}
+summary {
+  cursor: pointer;
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none; /* hides default marker */
+}
+</style>
+
+<ul>
+  {% for log in logs %}
+    <li>
+      <details>
+        <summary>
+          {{ log.timestamp|localtime|date:"Y-m-d H:i" }} – 
+          Created: {{ log.created }}, 
+          Updated: {{ log.updated }}, 
+          Deactivated: {{ log.deactivated }}
+        </summary>
+        <pre>{{ log.details }}</pre>
+      </details>
+    </li>
+  {% empty %}
+    <li>No snapshot logs yet.</li>
+  {% endfor %}
+</ul>
+
 
 {% endblock %}
 

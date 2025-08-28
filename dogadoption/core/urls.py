@@ -107,5 +107,18 @@ urlpatterns += [
     path('dog-image/<int:image_id>/delete/', views.delete_dog_image, name='delete_dog_image'),
 ]
 
+from django.urls import path
+#from .views import dog_report
+
+#urlpatterns += [
+#    path("reports/dogs/", dog_report, name="dog_report"),
+#]
+
+from django.urls import path
+from . import views
+
+urlpatterns += [
+    path("reports/dogs/", views.dog_report, name="dog_report"),
+]
 
 

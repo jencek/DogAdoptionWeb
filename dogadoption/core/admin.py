@@ -14,3 +14,13 @@ admin.site.register(MedicalRecord)
 admin.site.register(Application)
 
 
+
+
+from django.contrib import admin
+from .models import DogSnapshotLog
+
+@admin.register(DogSnapshotLog)
+class DogSnapshotLogAdmin(admin.ModelAdmin):
+    list_display = ("timestamp", "created", "updated", "deactivated")
+    readonly_fields = ("timestamp", "created", "updated", "deactivated", "errors", "details")
+    ordering = ("-timestamp",)

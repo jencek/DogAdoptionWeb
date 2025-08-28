@@ -3,6 +3,21 @@
 from django.db import models
 import datetime
 
+
+
+class DogSnapshotLog(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    created = models.IntegerField(default=0)
+    updated = models.IntegerField(default=0)
+    deactivated = models.IntegerField(default=0)
+    errors = models.JSONField(default=list, blank=True)
+    details = models.JSONField(default=list, blank=True)
+
+    def __str__(self):
+        return f"Snapshot @ {self.timestamp} (C:{self.created} U:{self.updated} D:{self.deactivated})"
+
+
+
 class Dog(models.Model):
     SEX_CHOICES = [('Male', 'Male'), ('Female', 'Female')]
     SIZE_CHOICES = [('Toy', 'Toy'),('Small', 'Small'), ('Medium', 'Medium'), ('Large', 'Large')]

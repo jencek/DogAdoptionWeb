@@ -4,7 +4,7 @@
   <h2>Dog Walks</h2>
 
   <a class="btn btn-primary" href="{% url 'dogwalk_add' %}">Add Walk</a>
-
+<a href="{% url 'dog_report' %}">Dog Walk Report</a> 
 
 <form method="get" class="mb-3 d-flex">
     <input type="text" name="q" value="{{ search_query }}" class="form-control me-2" placeholder="Search by dog or walker...">
@@ -54,4 +54,7 @@
       {% endfor %}
     </tbody>
   </table>
+
+
+
 {% endblock %}

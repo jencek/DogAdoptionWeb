@@ -1,0 +1,47 @@
+{% extends "core/base.html" %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Dog Walk Report</h1>
+
+    <!-- Filter Form -->
+    <form method="get" class="mb-4">
+        {{ filter.form.as_p }}
+        <button type="submit" class="btn btn-primary">Apply</button>
+        <a href="{% url 'dog_report' %}" class="btn btn-secondary">Clear</a>
+    </form>
+
+    <!-- Table -->
+    <div class="mb-4">
+        {% render_table table %}
+    </div>
+
+    <!-- Chart -->
+    <canvas id="walkChart" height="100"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('walkChart').getContext('2d');
+const chartData = {
+    labels: {{ chart_labels|safe }},
+    datasets: {{ chart_datasets|safe }}
+};
+
+new Chart(ctx, {
+    type: 'line',
+    data: chartData,
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Weekly Walks per Dog' }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+{% endblock %}

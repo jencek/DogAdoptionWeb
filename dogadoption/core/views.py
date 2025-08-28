@@ -54,6 +54,8 @@ from .serializers import DogSerializer
 
 from django.db.models.functions import Lower
 
+from .models import DogSnapshotLog
+
 
 def register(request):
     if request.method == 'POST':
@@ -159,7 +161,7 @@ def update_instance_fields(instance, data, fields):
             changed_fields.append(field)
     
     if was_updated:
-    	setattr(instance, 'update_date', str(datetime.date.today()))
+    	setattr(instance, 'update_date', str(datetime.today().date())) 
     	instance.save()
     
     return was_updated, changed_fields
@@ -176,6 +178,7 @@ def full_snapshot_dogs(request):
     errors = []
     created = 0
     updated = 0
+    action_log = ""
 
     for idx, dog_data in enumerate(request.data):
         nameext = dog_data.get('nameext')
@@ -203,6 +206,7 @@ def full_snapshot_dogs(request):
         	    image = dog_data.get('image'),
     	        )
             created += 1
+            action_log += f"created dog: name: { dog_data.get('name') }, breed: { dog_data.get('breed') } \n"
 
         else:
             # handle an incoming record where the existing dog's status is one of the following:
@@ -236,6 +240,7 @@ def full_snapshot_dogs(request):
             if was_updated:
                 updated += 1
                 print(f"****************Updated dog {dog.nameext}, fields changed: {changed_fields} *************")
+                action_log += f"Updated dog {dog.name}, fields changed: {changed_fields} \n"
 
 
 		# --- Handle additional URLs ---
@@ -248,7 +253,24 @@ def full_snapshot_dogs(request):
 
 
     # Deactivate dogs not in the incoming snapshot
-    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted']) | Q(local_created_dog__in=[True])).update(status='Adopted', adoption_date = datetime.date.today(), update_date = datetime.date.today())
+    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted']) | Q(local_created_dog__in=[True]))
+    print("Deactivated dogs:")
+    print(deactivated)
+    for y in deactivated:
+        action_log += f"Deactivating: {y.name}\n"
+
+    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted']) | Q(local_created_dog__in=[True])).update(status='Adopted', adoption_date = datetime.today().date(), update_date = datetime.today().date())
+
+
+  # 🔹 Save to database log
+    DogSnapshotLog.objects.create(
+        created=created,
+        updated=updated,
+        deactivated=deactivated,
+        errors=errors,
+        details=action_log
+    )
+
 
     return Response({
         'created': created,
@@ -276,7 +298,8 @@ class HomeView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        cutoff_date = datetime.date.today() - timedelta(days=2)
+        cutoff_date = datetime.today() - timedelta(days=2)
+        #cutoff_date = datetime.date.today() - timedelta(days=2)
 
         dogs = Dog.objects.filter(
             Q(creation_date__gte=cutoff_date) |
@@ -286,7 +309,11 @@ class HomeView(TemplateView):
         # Print the SQL query
         print(dogs.query)  # 💡 Shows the raw SQL that will be executed
 
+        recent_snapshots = DogSnapshotLog.objects.order_by('-timestamp')[:3]
+   
         context['dogs'] = dogs
+        context['logs']  = recent_snapshots
+        
         return context
 
 
@@ -709,7 +736,7 @@ class AdoptionListView(ListView):
                 Q(adopter__first_name__icontains=query) |
                 Q(adopter__last_name__icontains=query) |
                 Q(adopter_full_name__icontains=query)
-            ).distinct()
+            )#.distinct()
 
         return queryset
 
@@ -1050,7 +1077,7 @@ class DogWalkListView(ListView):
                 Q(walker__first_name__icontains=query) |
                 Q(walker__last_name__icontains=query) |
                 Q(walker_full_name__icontains=query)
-            ).distinct()
+            )#.distinct()
 
         return queryset
 
@@ -1159,7 +1186,7 @@ def dog_foster_assignment_list(request):
         assignments = assignments.filter(
             Q(dog__name__icontains=query) |
             Q(foster__name__icontains=query) 
-        ).distinct()
+        )#.distinct()
 
     return render(
         request,
@@ -1176,5 +1203,263 @@ def dog_search(request):
     q = request.GET.get("q", "")
     dogs = Dog.objects.filter(name__icontains=q)[:10]
     return JsonResponse([{"id": d.id, "name": d.name} for d in dogs], safe=False)
+
+
+
+
+
+# views.py
+
+
+from django.shortcuts import render
+from django_tables2 import RequestConfig
+from django.db.models import Count, Sum  # ✅ import aggregation functions
+from .models import Dog
+from .reports import DogReportFilter, DogReportTable
+
+# def dog_report(request):
+#     # Annotate dogs with walk counts + total minutes
+#     qs = Dog.objects.all().annotate(
+#         walk_count=Count("dogwalk"),
+#         walk_minutes=Sum("dogwalk__duration_minutes"),
+#     )
+
+#     # Apply filters
+#     f = DogReportFilter(request.GET, queryset=qs)
+#     print("dog_report:qs")
+#     print(f.qs.query)
+#     #print(qs)
+
+#     # Build table
+#     table = DogReportTable(f.qs)
+#     RequestConfig(request, paginate={"per_page": 20}).configure(table)
+
+#     return render(request, "core/dog_report.html", {"filter": f, "table": table})
+
+from django.db.models import ExpressionWrapper, F, FloatField, IntegerField
+from django.db.models import F, ExpressionWrapper, FloatField, Value
+from django.db.models.functions import Coalesce
+
+# def dog_report(request):
+#     # Base queryset of Dogs
+#     qs = Dog.objects.all()
+
+#     # Apply filters (without annotation yet)
+#     f = DogReportFilter(request.GET, queryset=qs)
+
+#     # Now annotate AFTER filtering
+#     qs = f.qs.annotate(
+#         walk_count=Count("dogwalk", distinct=True),
+#         walk_minutes=Coalesce(Sum("dogwalk__duration_minutes"), 0),
+#         ).annotate(
+#             walk_avg_minutes=ExpressionWrapper(
+#                 F("walk_minutes") * 1.0 / Coalesce(F("walk_count"), 1),
+#                 output_field=IntegerField()
+#         )
+#     )
+  
+#     print("final report query:")
+#     print(qs.query)
+
+#     # Build table
+#     table = DogReportTable(qs)
+#     RequestConfig(request, paginate={"per_page": 20}).configure(table)
+
+#     return render(request, "core/dog_report.html", {"filter": f, "table": table})
+
+
+
+
+from django.db.models import (
+    Count, Sum, F, ExpressionWrapper, FloatField, Value
+)
+from django.db.models.functions import Coalesce, TruncWeek
+
+# def dog_report(request):
+#     # Base queryset of Dogs
+#     qs = Dog.objects.all()
+
+#     # Apply filters (without annotation yet)
+#     f = DogReportFilter(request.GET, queryset=qs)
+
+#     # Annotate total walks + total minutes
+#     qs = f.qs.annotate(
+#         walk_count=Count("dogwalk", distinct=True),
+#         walk_minutes=Coalesce(Sum("dogwalk__duration_minutes"), 0),
+#     )
+
+#     # Count DISTINCT weeks where the dog had at least one walk
+#     qs = qs.annotate(
+#         walk_week_count=Count(TruncWeek("dogwalk__walk_date"), distinct=True)
+#     )
+
+#     # Average minutes per week = total_minutes / weeks
+#     qs = qs.annotate(
+#         walk_avg_minutes_per_week=ExpressionWrapper(
+#             F("walk_minutes") * 1.0 / Coalesce(F("walk_week_count"), 1),
+#             output_field=FloatField()
+#         )
+
+#         )
+#     qs = qs.annotate(
+#             walk_avg_minutes=ExpressionWrapper(
+#                 F("walk_minutes") * 1.0 / Coalesce(F("walk_count"), 1),
+#                 output_field=IntegerField()
+#         )
+#     )
+#     print("final report query:")
+#     print(qs.query)
+
+#     # Build table
+#     table = DogReportTable(qs)
+#     RequestConfig(request, paginate={"per_page": 20}).configure(table)
+
+#     return render(request, "core/dog_report.html", {"filter": f, "table": table})
+
+
+
+
+
+
+from django.shortcuts import render
+from django.db.models import Count, Sum, F, ExpressionWrapper, IntegerField, DurationField
+from django.db.models.functions import ExtractWeek, ExtractYear
+from django_tables2 import RequestConfig
+from .models import Dog
+from .reports import DogReportFilter, DogReportTable
+
+
+from django.db.models import Count, Sum, F, ExpressionWrapper, IntegerField
+from django.db.models.functions import TruncWeek
+
+from django.db.models import Count, Sum
+from django.db.models.functions import ExtractWeek
+from collections import defaultdict
+import json
+
+from django.shortcuts import render
+from django.db.models import Count, Sum, F, IntegerField, ExpressionWrapper
+from django_tables2 import RequestConfig
+from .models import Dog, DogWalk
+from .reports import DogReportFilter, DogReportTable
+from collections import defaultdict
+from datetime import datetime, timedelta
+import itertools
+
+from django.shortcuts import render
+from django.db.models import Count, Sum, F, ExpressionWrapper, IntegerField
+from django.db.models.functions import TruncWeek
+from django_tables2 import RequestConfig
+
+from .models import Dog, DogWalk
+
+from .reports import DogReportTable
+
+
+from django.db.models import Count
+from django.db.models.functions import ExtractWeek, ExtractYear
+from django.db.models import F, Sum, Count, ExpressionWrapper, IntegerField, Case, When
+
+import json
+from datetime import datetime, timedelta
+from django.shortcuts import render
+from django.db.models import Count
+from .models import Dog, DogWalk
+from .reports import DogReportFilter, DogReportTable
+from django_tables2 import RequestConfig
+
+def dog_report(request):
+    # Base queryset
+    qs = Dog.objects.all()
+    f = DogReportFilter(request.GET, queryset=qs)
+
+    # Annotate walk counts
+    qs = f.qs.annotate(walk_count=Count("dogwalk",distinct=True),
+        walk_minutes=Sum("dogwalk__duration_minutes", distinct=True))
+
+    qs = qs.annotate(
+        min_per_walk_avg=ExpressionWrapper(
+            F("walk_minutes") * 1.0 / F("walk_count"),
+            output_field=FloatField()
+        ))
+    
+    #print("dogwalk query..")
+    #print(qs.query)
+
+    # Table
+    #table = DogReportTable(qs)
+    #RequestConfig(request, paginate={"per_page": 20}).configure(table)
+
+    # --- Chart Data ---
+    walks = DogWalk.objects.filter(dog__in=f.qs)
+
+    # Date range
+    date_after = request.GET.get('walk_date_after')
+    date_before = request.GET.get('walk_date_before')
+    if date_after:
+        date_after = datetime.strptime(date_after, "%Y-%m-%d").date()
+        walks = walks.filter(walk_date__gte=date_after)
+    if date_before:
+        date_before = datetime.strptime(date_before, "%Y-%m-%d").date()
+        walks = walks.filter(walk_date__lte=date_before)
+
+    # Generate all weeks in range
+    if date_after and date_before:
+        all_weeks = []
+        current = date_after
+        while current <= date_before:
+            year, week, _ = current.isocalendar()
+            week_label = f"{year}-W{week}"
+            if week_label not in all_weeks:
+                all_weeks.append(week_label)
+            current += timedelta(days=7 - current.weekday())  # jump to next Monday
+    else:
+        # fallback: use weeks from walks
+        all_weeks = sorted({f"{w.walk_date.isocalendar()[0]}-W{w.walk_date.isocalendar()[1]}" for w in walks})
+
+
+     #calculate average minutes per week for table. Down here to leverage the weeks logic
+    qs = qs.annotate(
+    min_per_week_avg=ExpressionWrapper(
+        F("walk_minutes") * 1.0 / len(all_weeks),
+        output_field=FloatField()
+    ))        
+    print("dogwalk query..")
+    print(qs.query)
+    # Table
+    table = DogReportTable(qs)
+    RequestConfig(request, paginate={"per_page": 20}).configure(table)
+
+
+
+    # Count walks per dog per week
+    weekly_counts = {week: {} for week in all_weeks}
+    for walk in walks:
+        year_week = f"{walk.walk_date.isocalendar()[0]}-W{walk.walk_date.isocalendar()[1]}"
+        dog_name = walk.dog.name
+        weekly_counts[year_week][dog_name] = weekly_counts[year_week].get(dog_name, 0) + 1
+
+    # Prepare datasets
+    dog_names = sorted({walk.dog.name for walk in walks} | {dog.name for dog in f.qs})  # include dogs with zero walks
+    colors = ["red","blue","green","orange","purple","cyan","magenta","yellow"]
+    datasets = []
+    for i, dog_name in enumerate(dog_names):
+        data = [weekly_counts.get(week, {}).get(dog_name, 0) for week in all_weeks]
+        datasets.append({
+            "label": dog_name,
+            "data": data,
+            "borderColor": colors[i % len(colors)],
+            "backgroundColor": colors[i % len(colors)],
+            "fill": False
+        })
+
+    context = {
+        "filter": f,
+        "table": table,
+        "chart_labels": json.dumps(all_weeks),
+        "chart_datasets": json.dumps(datasets),
+    }
+
+    return render(request, "core/dog_report.html", context)
 
 

@@ -28,6 +28,9 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "core",
     "rest_framework",
+    "django_tables2",
 ]
 
 MIDDLEWARE = [
@@ -111,11 +115,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
-
-USE_I18N = True
-
+TIME_ZONE = "Australia/Sydney"
 USE_TZ = True
+
+#USE_I18N = True
+
 
 
 # Static files (CSS, JavaScript, Images)
