@@ -8,7 +8,9 @@ Key concepts are:
 
 
   Todo:
-  1) remove dog friend and bonded dog relationships if the referenced dog is adopted or made inactive
-  2) add reporting of dog walk time/frequency) per week or other time fram.
-  3) add reporting for added/removed dogs over time. Adds/removes/net
+  1) remove dog friend and bonded dog relationships if the referenced dog is adopted or made inactive ✅
+  2) add reporting of dog walk time/frequency) per week or other time frame ✅
+  3) add reporting for added/removed dogs over time. Adds/removes/net ✅
+  4) Add additional graphs
+  
   

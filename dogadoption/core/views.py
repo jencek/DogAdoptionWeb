@@ -212,12 +212,14 @@ def full_snapshot_dogs(request):
             # handle an incoming record where the existing dog's status is one of the following:
             #     Adopted -> new status is Adopted-Returned
             #     Fostered -> leave as fostered
-            #     opther -> set tho Active
+            #     other -> set tho Active
             cur_status = dog.status
             if cur_status in ['Adopted', 'Adopted-Ret']:
                 new_status = 'Adopted-Ret'
             elif cur_status == 'Fostered':
                 new_status = 'Fostered'
+            elif cur_status == 'Deceased':
+                new_status = 'Deceased'
             else:
                 new_status = 'Available'
 
@@ -253,13 +255,18 @@ def full_snapshot_dogs(request):
 
 
     # Deactivate dogs not in the incoming snapshot
-    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted']) | Q(local_created_dog__in=[True]))
+    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted','Deceased']) | Q(local_created_dog__in=[True]))
     print("Deactivated dogs:")
     print(deactivated)
     for y in deactivated:
         action_log += f"Deactivating: {y.name}\n"
 
-    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted']) | Q(local_created_dog__in=[True])).update(status='Adopted', adoption_date = datetime.today().date(), update_date = datetime.today().date())
+        #remove friend dog references to the dog being deactivated
+
+        #remove bonded dog references the dog being deactivated
+
+
+    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted','Deceased']) | Q(local_created_dog__in=[True])).update(status='Adopted', adoption_date = datetime.today().date(), update_date = datetime.today().date())
 
 
   # 🔹 Save to database log
@@ -530,7 +537,7 @@ class DogUpdateView(LoginRequiredMixin, UpdateView):
         )
 
         if changed:
-            self.object.update_date = datetime.date.today()
+            self.object.update_date = datetime.today().date()
 
 
         new_bond = form.cleaned_data.get('bonded_pair_dog')

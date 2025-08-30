@@ -21,7 +21,7 @@ class DogSnapshotLog(models.Model):
 class Dog(models.Model):
     SEX_CHOICES = [('Male', 'Male'), ('Female', 'Female')]
     SIZE_CHOICES = [('Toy', 'Toy'),('Small', 'Small'), ('Medium', 'Medium'), ('Large', 'Large')]
-    STATUS_CHOICES = [('Available', 'Available'), ('Adopted', 'Adopted'),  ('Adopted-Ret', 'Adopted-Ret'),('Fostered', 'Fostered'), ('Pending', 'Pending'), ('Unavailable', 'Unavailable'), ('Inactive', 'Inactive')]
+    STATUS_CHOICES = [('Deceased', 'Deceased'),('Available', 'Available'), ('Adopted', 'Adopted'),  ('Adopted-Ret', 'Adopted-Ret'),('Fostered', 'Fostered'), ('Pending', 'Pending'), ('Unavailable', 'Unavailable'), ('Inactive', 'Inactive')]
 
     WALKER_CAPABILITY_CHOICES = [('Beginner <10', 'Beginner <10'),('General','General'), ('Experienced','Experienced'), ('KH','KH'), ('Dog Buddy','Dog Buddy')]
     WALK_GUIDANCE_CHOICES = [('Bed rest','Bed rest'), ('Less than 20 mins','Less than 20 mins'), ('Greater Than 20 mins', 'Greater Than 20 mins'), ('Unlimited', 'Unlimited')]
@@ -188,3 +188,16 @@ class Application(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Submitted')
     notes = models.TextField(blank=True, null=True)
 
+
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+# put this after the Dog model definition
+@receiver(post_save, sender=Dog)
+def clear_references_on_deactivation(sender, instance, **kwargs):
+    if instance.status in ["Inactive", "Adopted"]:
+        Dog.objects.filter(bonded_pair_dog=instance).update(bonded_pair_dog=None)
+        Dog.objects.filter(friend_dog1=instance).update(friend_dog1=None)
+        Dog.objects.filter(friend_dog2=instance).update(friend_dog2=None)
+        Dog.objects.filter(friend_dog3=instance).update(friend_dog3=None)
