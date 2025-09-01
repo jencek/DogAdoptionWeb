@@ -1375,10 +1375,32 @@ from .models import Dog, DogWalk
 from .reports import DogReportFilter, DogReportTable
 from django_tables2 import RequestConfig
 
+from datetime import date, timedelta
+from django.db.models import Count, Avg
+from django.db.models.functions import ExtractWeek, ExtractYear
+from django.shortcuts import render
+from .models import Dog, DogWalk
+from .reports import DogReportFilter
+from .reports import DogReportTable
+from django_tables2 import RequestConfig
+
+def generate_weeks(start_date, end_date):
+    """Return list of (year, week_number) tuples between start_date and end_date."""
+    weeks = []
+    current = start_date
+    while current <= end_date:
+        y, w, _ = current.isocalendar()
+        if (y, w) not in weeks:
+            weeks.append((y, w))
+        current += timedelta(days=7)
+    return weeks
+
+
 def dog_report(request):
-    # Base queryset
     qs = Dog.objects.all()
     f = DogReportFilter(request.GET, queryset=qs)
+    filtered_dogs = f.qs
+
 
     # Annotate walk counts
     qs = f.qs.annotate(walk_count=Count("dogwalk",distinct=True),
@@ -1390,83 +1412,118 @@ def dog_report(request):
             output_field=FloatField()
         ))
     
-    #print("dogwalk query..")
-    #print(qs.query)
 
-    # Table
-    #table = DogReportTable(qs)
-    #RequestConfig(request, paginate={"per_page": 20}).configure(table)
 
-    # --- Chart Data ---
-    walks = DogWalk.objects.filter(dog__in=f.qs)
-
-    # Date range
-    date_after = request.GET.get('walk_date_after')
-    date_before = request.GET.get('walk_date_before')
-    if date_after:
-        date_after = datetime.strptime(date_after, "%Y-%m-%d").date()
-        walks = walks.filter(walk_date__gte=date_after)
-    if date_before:
-        date_before = datetime.strptime(date_before, "%Y-%m-%d").date()
-        walks = walks.filter(walk_date__lte=date_before)
-
-    # Generate all weeks in range
-    if date_after and date_before:
-        all_weeks = []
-        current = date_after
-        while current <= date_before:
-            year, week, _ = current.isocalendar()
-            week_label = f"{year}-W{week}"
-            if week_label not in all_weeks:
-                all_weeks.append(week_label)
-            current += timedelta(days=7 - current.weekday())  # jump to next Monday
+    # Determine date range
+    walk_date_after = request.GET.get('walk_date_after')
+    walk_date_before = request.GET.get('walk_date_before')
+    if walk_date_after:
+        start_date = date.fromisoformat(walk_date_after)
     else:
-        # fallback: use weeks from walks
-        all_weeks = sorted({f"{w.walk_date.isocalendar()[0]}-W{w.walk_date.isocalendar()[1]}" for w in walks})
+        start_date = date.today() - timedelta(weeks=12)
 
+    if walk_date_before:
+        end_date = date.fromisoformat(walk_date_before)
+    else:
+        end_date = date.today()
 
-     #calculate average minutes per week for table. Down here to leverage the weeks logic
+    week_range = generate_weeks(start_date, end_date)
+    print("week_range")
+    print(week_range)
+
+    # --- WALK COUNTS ---
+    walk_counts = DogWalk.objects.filter(
+        dog__in=filtered_dogs,
+        walk_date__gte=start_date,
+        walk_date__lte=end_date
+    ).annotate(
+        year=ExtractYear("walk_date"),
+        week=ExtractWeek("walk_date")
+    ).values("dog_id", "year", "week").annotate(
+        walk_count=Count("id"),
+        avg_minutes=Avg("duration_minutes")
+    )
+
+    print("walk_counts:")
+    print(walk_counts)
+
+    # Initialize dicts
+    dog_week_counts = {}
+    dog_week_minutes = {}
+    for dog in filtered_dogs:
+        dog_week_counts[dog.name] = { (y, w): 0 for (y, w) in week_range }
+        dog_week_minutes[dog.name] = { (y, w): 0 for (y, w) in week_range }
+
+    # Fill from DB
+    for row in walk_counts:
+        dog = filtered_dogs.get(id=row['dog_id'])
+        dog_week_counts[dog.name][(row['year'], row['week'])] = row['walk_count']
+        dog_week_minutes[dog.name][(row['year'], row['week'])] = row['avg_minutes'] or 0
+
+    # Prepare chart datasets
+    labels = [f"{y}-W{w}" for (y, w) in week_range]
+    colors = ['red', 'blue', 'green', 'orange', 'purple', 'cyan', 'magenta']
+
+    datasets_counts = []
+    datasets_minutes = []
+    for i, dog in enumerate(filtered_dogs):
+        datasets_counts.append({
+            'label': dog.name,
+            'data': [dog_week_counts[dog.name][(y, w)] for (y, w) in week_range],
+            'borderColor': colors[i % len(colors)],
+            'backgroundColor': colors[i % len(colors)],
+            'fill': False,
+        })
+        datasets_minutes.append({
+            'label': dog.name,
+            'data': [dog_week_minutes[dog.name][(y, w)] for (y, w) in week_range],
+            'borderColor': colors[i % len(colors)],
+            'backgroundColor': colors[i % len(colors)],
+            'fill': False,
+        })
+
+    #calculate average minutes per week for table. Down here to leverage the weeks logic
     qs = qs.annotate(
     min_per_week_avg=ExpressionWrapper(
-        F("walk_minutes") * 1.0 / len(all_weeks),
+        F("walk_minutes") * 1.0 / len(week_range),
         output_field=FloatField()
     ))        
     print("dogwalk query..")
     print(qs.query)
+
+
     # Table
     table = DogReportTable(qs)
+
     RequestConfig(request, paginate={"per_page": 20}).configure(table)
 
+    print("filter:")
+    print(f.qs)
 
+    print("table:")
+    for row in table.rows:
+        row_dict = {column.name: row.get_cell(column.name) for column in table.columns}
+        print(row_dict)
 
-    # Count walks per dog per week
-    weekly_counts = {week: {} for week in all_weeks}
-    for walk in walks:
-        year_week = f"{walk.walk_date.isocalendar()[0]}-W{walk.walk_date.isocalendar()[1]}"
-        dog_name = walk.dog.name
-        weekly_counts[year_week][dog_name] = weekly_counts[year_week].get(dog_name, 0) + 1
+    print("labels:")
+    for r in labels:
+        print(r)
 
-    # Prepare datasets
-    dog_names = sorted({walk.dog.name for walk in walks} | {dog.name for dog in f.qs})  # include dogs with zero walks
-    colors = ["red","blue","green","orange","purple","cyan","magenta","yellow"]
-    datasets = []
-    for i, dog_name in enumerate(dog_names):
-        data = [weekly_counts.get(week, {}).get(dog_name, 0) for week in all_weeks]
-        datasets.append({
-            "label": dog_name,
-            "data": data,
-            "borderColor": colors[i % len(colors)],
-            "backgroundColor": colors[i % len(colors)],
-            "fill": False
-        })
+    print("dataset counts:")
+    for j in datasets_counts:
+        print(j)
+   
+    print("dataset minutes:")
+    for o in datasets_minutes:
+        print(j)
 
-    context = {
+ 
+
+    return render(request, "core/dog_report.html", {
         "filter": f,
         "table": table,
-        "chart_labels": json.dumps(all_weeks),
-        "chart_datasets": json.dumps(datasets),
-    }
-
-    return render(request, "core/dog_report.html", context)
-
+        "chart_labels": json.dumps(labels),
+        "chart_datasets_counts": json.dumps(datasets_counts),
+        "chart_datasets_minutes": json.dumps(datasets_minutes),
+    })
 

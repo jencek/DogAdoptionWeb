@@ -1,42 +1,109 @@
-{% extends "core/base.html" %}
+{% extends 'core/base.html' %}
 {% load render_table from django_tables2 %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Dog Walk Report</h1>
 
-    <!-- Filter Form -->
-    <form method="get" class="mb-4">
-        {{ filter.form.as_p }}
-        <button type="submit" class="btn btn-primary">Apply</button>
-        <a href="{% url 'dog_report' %}" class="btn btn-secondary">Clear</a>
+
+
+<h1 class="mb-4">🐾 Dog Walk Report</h1>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Filters</strong></div>
+  <div class="card-body">
+    <form method="get" class="form-row align-items-end">
+      <div class="form-group col-md-4">
+        <label>Dogs</label>
+        {{ filter.form.dogs }}
+      </div>
+      <div class="form-group col-md-2">
+        <label>Status</label>
+        {{ filter.form.status }}
+      </div>
+      <div class="form-group col-md-2">
+        <label>Walked After</label>
+        {{ filter.form.walk_date_after }}
+      </div>
+      <div class="form-group col-md-2">
+        <label>Walked Before</label>
+        {{ filter.form.walk_date_before }}
+      </div>
+      <div class="form-group col-md-2">
+        <button type="submit" class="btn btn-primary btn-block">Apply</button>
+      </div>
     </form>
-
-    <!-- Table -->
-    <div class="mb-4">
-        {% render_table table %}
-    </div>
-
-    <!-- Chart -->
-    <canvas id="walkChart" height="100"></canvas>
+  </div>
 </div>
+
+<!-- Table -->
+<div class="card mb-4">
+  <div class="card-body">
+    {% render_table table %}
+  </div>
+</div>
+
+<!-- Graph: Walk Counts -->
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Number of Walks per Week</strong></div>
+  <div class="card-body">
+    <canvas id="walkCountChart"></canvas>
+  </div>
+</div>
+
+<!-- Graph: Avg Minutes -->
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Average Minutes per Walk (per Week)</strong></div>
+  <div class="card-body">
+    <canvas id="walkMinutesChart"></canvas>
+  </div>
+</div>
+
+
+<pre style="display:none">
+{{ chart_datasets_counts }}
+</pre>
+<pre style="display:none">
+{{ chart_datasets_minutes }}
+</pre>
+<pre style="display:none">
+{{ chart_labels }}
+</pre>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const ctx = document.getElementById('walkChart').getContext('2d');
-const chartData = {
-    labels: {{ chart_labels|safe }},
-    datasets: {{ chart_datasets|safe }}
-};
+const labels = {{ chart_labels|safe }};
 
-new Chart(ctx, {
+// Walk Counts
+new Chart(document.getElementById('walkCountChart').getContext('2d'), {
     type: 'line',
-    data: chartData,
+    data: {
+        labels: labels,
+        datasets: {{ chart_datasets_counts|safe }}
+    },
     options: {
         responsive: true,
         plugins: {
             legend: { position: 'top' },
-            title: { display: true, text: 'Weekly Walks per Dog' }
+            title: { display: true, text: 'Walks per Week per Dog' }
+        },
+        scales: {
+            y: { beginAtZero: true, stepSize: 1 }
+        }
+    }
+});
+
+// Avg Minutes
+new Chart(document.getElementById('walkMinutesChart').getContext('2d'), {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: {{ chart_datasets_minutes|safe }}
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Average Minutes per Walk (per Week)' }
         },
         scales: {
             y: { beginAtZero: true }
