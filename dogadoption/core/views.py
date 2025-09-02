@@ -1396,27 +1396,24 @@ def generate_weeks(start_date, end_date):
     return weeks
 
 
+from django.db.models import Subquery, OuterRef, Count, Sum, Avg, FloatField, ExpressionWrapper
+from django.db.models.functions import ExtractWeek, ExtractYear
+from datetime import date, timedelta
+
 def dog_report(request):
     qs = Dog.objects.all()
     f = DogReportFilter(request.GET, queryset=qs)
     filtered_dogs = f.qs
 
+    print("filtered_dogs:")
+    print(filtered_dogs.query)
 
-    # Annotate walk counts
-    qs = f.qs.annotate(walk_count=Count("dogwalk",distinct=True),
-        walk_minutes=Sum("dogwalk__duration_minutes", distinct=True))
+    # --- Subqueries for aggregates ---
+ 
+    # --- Date range ---
+    walk_date_after = request.GET.get("walk_date_after")
+    walk_date_before = request.GET.get("walk_date_before")
 
-    qs = qs.annotate(
-        min_per_walk_avg=ExpressionWrapper(
-            F("walk_minutes") * 1.0 / F("walk_count"),
-            output_field=FloatField()
-        ))
-    
-
-
-    # Determine date range
-    walk_date_after = request.GET.get('walk_date_after')
-    walk_date_before = request.GET.get('walk_date_before')
     if walk_date_after:
         start_date = date.fromisoformat(walk_date_after)
     else:
@@ -1428,102 +1425,113 @@ def dog_report(request):
         end_date = date.today()
 
     week_range = generate_weeks(start_date, end_date)
-    print("week_range")
-    print(week_range)
 
-    # --- WALK COUNTS ---
-    walk_counts = DogWalk.objects.filter(
-        dog__in=filtered_dogs,
+ # --- Subqueries with date range ---
+    dogwalks = DogWalk.objects.filter(
+        dog=OuterRef("pk"),
         walk_date__gte=start_date,
         walk_date__lte=end_date
-    ).annotate(
-        year=ExtractYear("walk_date"),
-        week=ExtractWeek("walk_date")
-    ).values("dog_id", "year", "week").annotate(
-        walk_count=Count("id"),
-        avg_minutes=Avg("duration_minutes")
     )
 
-    print("walk_counts:")
-    print(walk_counts)
+    walk_count_subq = (
+        dogwalks.values("dog")
+        .annotate(c=Count("id"))
+        .values("c")
+    )
 
-    # Initialize dicts
-    dog_week_counts = {}
-    dog_week_minutes = {}
-    for dog in filtered_dogs:
-        dog_week_counts[dog.name] = { (y, w): 0 for (y, w) in week_range }
-        dog_week_minutes[dog.name] = { (y, w): 0 for (y, w) in week_range }
+    walk_minutes_subq = (
+        dogwalks.values("dog")
+        .annotate(s=Sum("duration_minutes"))
+        .values("s")
+    )
+    qs = filtered_dogs.annotate(
+        walk_count=Subquery(walk_count_subq, output_field=FloatField()),
+        walk_minutes=Subquery(walk_minutes_subq, output_field=FloatField())
+    )
 
-    # Fill from DB
+    qs = qs.annotate(
+        min_per_walk_avg=ExpressionWrapper(
+            F("walk_minutes") * 1.0 / F("walk_count"),
+            output_field=FloatField()
+        )
+    )
+
+
+    # --- Walk counts by week ---
+    walk_counts = (
+        DogWalk.objects.filter(
+            dog__in=filtered_dogs,
+            walk_date__gte=start_date,
+            walk_date__lte=end_date,
+        )
+        .annotate(year=ExtractYear("walk_date"), week=ExtractWeek("walk_date"))
+        .values("dog_id", "year", "week")
+        .annotate(
+            walk_count=Count("id"),
+            avg_minutes=Avg("duration_minutes"),
+        )
+    )
+
+    # Init dicts
+    dog_week_counts = {
+        dog.name: {(y, w): 0 for (y, w) in week_range} for dog in filtered_dogs
+    }
+    dog_week_minutes = {
+        dog.name: {(y, w): 0 for (y, w) in week_range} for dog in filtered_dogs
+    }
+
     for row in walk_counts:
-        dog = filtered_dogs.get(id=row['dog_id'])
-        dog_week_counts[dog.name][(row['year'], row['week'])] = row['walk_count']
-        dog_week_minutes[dog.name][(row['year'], row['week'])] = row['avg_minutes'] or 0
+        dog = filtered_dogs.get(id=row["dog_id"])
+        dog_week_counts[dog.name][(row["year"], row["week"])] = row["walk_count"]
+        dog_week_minutes[dog.name][(row["year"], row["week"])] = (
+            row["avg_minutes"] or 0
+        )
 
-    # Prepare chart datasets
+    # --- Chart datasets ---
     labels = [f"{y}-W{w}" for (y, w) in week_range]
-    colors = ['red', 'blue', 'green', 'orange', 'purple', 'cyan', 'magenta']
+    colors = ["red", "blue", "green", "orange", "purple", "cyan", "magenta"]
 
     datasets_counts = []
     datasets_minutes = []
     for i, dog in enumerate(filtered_dogs):
-        datasets_counts.append({
-            'label': dog.name,
-            'data': [dog_week_counts[dog.name][(y, w)] for (y, w) in week_range],
-            'borderColor': colors[i % len(colors)],
-            'backgroundColor': colors[i % len(colors)],
-            'fill': False,
-        })
-        datasets_minutes.append({
-            'label': dog.name,
-            'data': [dog_week_minutes[dog.name][(y, w)] for (y, w) in week_range],
-            'borderColor': colors[i % len(colors)],
-            'backgroundColor': colors[i % len(colors)],
-            'fill': False,
-        })
+        datasets_counts.append(
+            {
+                "label": dog.name,
+                "data": [dog_week_counts[dog.name][(y, w)] for (y, w) in week_range],
+                "borderColor": colors[i % len(colors)],
+                "backgroundColor": colors[i % len(colors)],
+                "fill": False,
+            }
+        )
+        datasets_minutes.append(
+            {
+                "label": dog.name,
+                "data": [dog_week_minutes[dog.name][(y, w)] for (y, w) in week_range],
+                "borderColor": colors[i % len(colors)],
+                "backgroundColor": colors[i % len(colors)],
+                "fill": False,
+            }
+        )
 
-    #calculate average minutes per week for table. Down here to leverage the weeks logic
+    # --- Per-week average ---
     qs = qs.annotate(
-    min_per_week_avg=ExpressionWrapper(
-        F("walk_minutes") * 1.0 / len(week_range),
-        output_field=FloatField()
-    ))        
-    print("dogwalk query..")
-    print(qs.query)
-
+        min_per_week_avg=ExpressionWrapper(
+            F("walk_minutes") * 1.0 / len(week_range), output_field=FloatField()
+        )
+    )
 
     # Table
     table = DogReportTable(qs)
-
     RequestConfig(request, paginate={"per_page": 20}).configure(table)
 
-    print("filter:")
-    print(f.qs)
-
-    print("table:")
-    for row in table.rows:
-        row_dict = {column.name: row.get_cell(column.name) for column in table.columns}
-        print(row_dict)
-
-    print("labels:")
-    for r in labels:
-        print(r)
-
-    print("dataset counts:")
-    for j in datasets_counts:
-        print(j)
-   
-    print("dataset minutes:")
-    for o in datasets_minutes:
-        print(j)
-
- 
-
-    return render(request, "core/dog_report.html", {
-        "filter": f,
-        "table": table,
-        "chart_labels": json.dumps(labels),
-        "chart_datasets_counts": json.dumps(datasets_counts),
-        "chart_datasets_minutes": json.dumps(datasets_minutes),
-    })
-
+    return render(
+        request,
+        "core/dog_report.html",
+        {
+            "filter": f,
+            "table": table,
+            "chart_labels": json.dumps(labels),
+            "chart_datasets_counts": json.dumps(datasets_counts),
+            "chart_datasets_minutes": json.dumps(datasets_minutes),
+        },
+    )
