@@ -122,3 +122,12 @@ urlpatterns += [
 ]
 
 
+#from django.urls import path
+from .views import public_dog_list
+
+urlpatterns += [
+    path("adopt/", public_dog_list, name="public_dog_list"),
+]
+
+
+

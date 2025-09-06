@@ -1,0 +1,486 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Adopt a Dog</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url("/static/images/happy_retriever.png") no-repeat center center fixed;
+            background-size: cover;
+            backdrop-filter: blur(3px); /* slight blur for text readability */
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            background: rgba(255,255,255,0.7);
+            padding: 15px;
+            border-radius: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .card {
+            background: rgba(255,255,255,0.85);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: scale(1.03);
+        }
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;   /* instead of cover */
+            background: #f8f8f8;   /* filler background */
+        }
+
+        .card-body {
+            padding: 15px;
+        }
+        .card-body h2 {
+            margin: 0 0 10px;
+            color: #2c3e50;
+        }
+        .card-body p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+
+        .search-box {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.search-box input {
+    padding: 10px;
+    width: 60%;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.search-box button {
+    padding: 10px 15px;
+    border: none;
+    background: #3498db;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.search-box button:hover {
+    background: #2980b9;
+}
+
+
+.filter-bar {
+    text-align: center;
+    margin-bottom: 25px;
+}
+.filter-bar form {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.filter-bar input,
+.filter-bar select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.filter-bar button {
+    padding: 10px 15px;
+    border: none;
+    background: #3498db;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.filter-bar button:hover {
+    background: #2980b9;
+}
+
+
+
+/* Modal Overlay */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    overflow-y: auto;
+}
+
+/* Modal Box */
+.modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 20px;
+    border-radius: 15px;
+    max-width: 600px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+/*.modal-images {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+.modal-images img {
+    max-width: 120px;
+    border-radius: 8px;
+}
+*/
+
+
+
+
+
+/* Main hero image container */
+.modal-main-image {
+  position: relative;
+  text-align: center;
+  margin: 15px 0;
+}
+.modal-main-image img {
+  max-width: 100%;
+  max-height: 350px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f4f4f4;
+  padding: 8px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+/* Arrows */
+.prev, .next {
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+  background: rgba(255,255,255,0.7);
+  padding: 8px;
+  border-radius: 50%;
+  user-select: none;
+  transition: background 0.2s;
+}
+.prev:hover, .next:hover {
+  background: rgba(0,0,0,0.3);
+  color: white;
+}
+.prev { left: 10px; }
+.next { right: 10px; }
+
+/* Thumbnails */
+.modal-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+  justify-content: center;
+}
+.modal-images img {
+  max-width: 30%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f4f4f4;
+  padding: 5px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.modal-images img:hover {
+  transform: scale(1.05);
+}
+
+
+
+/* On small screens */
+@media (max-width: 768px) {
+    .modal-images img {
+        max-width: 45%;
+    }
+}
+
+
+
+
+
+
+.modal-notes {
+    margin-top: 15px;
+    background: #f9f9f9;
+    padding: 10px;
+    border-left: 4px solid #3498db;
+    border-radius: 8px;
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+    color: #555;
+}
+.close:hover {
+    color: #000;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* always two across on larger screens */
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Card styling */
+.dog-card {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    opacity: 0;
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+/* Staggered animation so cards don’t all pop at once */
+.dog-card:nth-child(1) { animation-delay: 0.1s; }
+.dog-card:nth-child(2) { animation-delay: 0.2s; }
+.dog-card:nth-child(3) { animation-delay: 0.3s; }
+.dog-card:nth-child(4) { animation-delay: 0.4s; }
+/* … add more if you have many dogs */
+
+/* Hover effect */
+.dog-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+/* Fix image cropping */
+.dog-card img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;   /* prevent cropping */
+    background: #f4f4f4;   /* neutral backdrop behind transparent areas */
+    border-radius: 10px;
+    padding: 5px;          /* so image doesn’t touch edges */
+}
+
+/* Fade-in upward animation */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* On small screens, stack 1 per row */
+@media (max-width: 768px) {
+    .dog-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐾 Meet Our Dogs Available for Adoption 🐾</h1>
+
+
+<div class="filter-bar">
+    <form method="get">
+        <!-- Search -->
+        <input type="text" name="q" placeholder="Search by name..."
+               value="{{ query }}">
+
+        <!-- Breed dropdown -->
+        <select name="breed">
+            <option value="">All Breeds</option>
+            {% for b in breeds %}
+                <option value="{{ b }}" {% if b == breed %}selected{% endif %}>{{ b }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- Size dropdown -->
+        <select name="size">
+            <option value="">All Sizes</option>
+            {% for s in sizes %}
+                <option value="{{ s }}" {% if s == size %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- Button -->
+        <button type="submit">Filter</button>
+    </form>
+</div>
+
+
+ <!-- Dog Cards -->
+<div class="dog-grid">
+    {% for dog in dogs %}
+    <div class="dog-card" onclick="openModal({{ dog.id }})">
+        {% if dog.image %}
+            <img src="{{ dog.image.url }}" alt="{{ dog.name }}">
+        {% else %}
+            <img src="{% static 'images/no-image.png' %}" alt="No Image">
+        {% endif %}
+        <h3>{{ dog.name }}</h3>
+        <p>{{ dog.breed }} - {{ dog.size }}</p>
+        <p>Age: {{ dog.age }}</p>
+    </div>
+
+    <!-- Modal for this dog -->
+ <div id="modal-{{ dog.id }}" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal({{ dog.id }})">&times;</span>
+
+    <h2>{{ dog.name }}</h2>
+    <p><strong>Breed:</strong> {{ dog.breed }}</p>
+    <p><strong>Size:</strong> {{ dog.size }}</p>
+    <p><strong>Sex:</strong> {{ dog.sex }}</p>
+    <p><strong>Age:</strong> {{ dog.age }}</p>
+
+    <!-- Main hero image with arrows -->
+    <div class="modal-main-image">
+      <span class="prev" onclick="changeImage('{{ dog.id }}', -1)">&#10094;</span>
+
+      {% if dog.image %}
+      <img id="main-image-{{ dog.id }}" src="{{ dog.image.url }}" alt="{{ dog.name }}">
+      {% else %}
+      <img id="main-image-{{ dog.id }}" src="{% static 'images/no-image.png' %}" alt="No Image">
+      {% endif %}
+
+      <span class="next" onclick="changeImage('{{ dog.id }}', 1)">&#10095;</span>
+    </div>
+
+    <!-- Extra gallery images (thumbnails) -->
+    {% if dog.dogurl_set.all %}
+    <div class="modal-images">
+      {% if dog.image %}
+        <img src="{{ dog.image.url }}" alt="{{ dog.name }} main" onclick="jumpToImage('{{ dog.id }}', 0)">
+      {% endif %}
+      {% for extra in dog.dogurl_set.all %}
+      {% if extra.image %}
+      <img src="{{ extra.image.url }}" alt="{{ dog.name }} extra" onclick="jumpToImage('{{ dog.id }}', {{ forloop.counter }})">
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if dog.notes %}
+    <div class="modal-notes">
+      <h4>Notes</h4>
+      <p>{{ dog.notes }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+
+    {% endfor %}
+</div>
+
+
+    </div>
+</body>
+</html>
+
+
+
+
+<script>
+let dogImages = {};  // Store all images for each dog
+let currentIndex = {}; // Track current index
+
+function openModal(id) {
+  document.getElementById("modal-" + id).style.display = "block";
+
+  // Collect all images for this dog (main + extras)
+  const imgs = [];
+  const main = document.querySelector(`#modal-${id} .modal-main-image img`);
+  if (main) imgs.push(main.src);
+
+  const extras = document.querySelectorAll(`#modal-${id} .modal-images img`);
+  extras.forEach(img => {
+    if (!imgs.includes(img.src)) { imgs.push(img.src); }
+  });
+
+  dogImages[id] = imgs;
+  currentIndex[id] = 0;
+}
+
+function closeModal(id) {
+  document.getElementById("modal-" + id).style.display = "none";
+}
+
+function changeImage(dogId, step) {
+  if (!dogImages[dogId]) return;
+  currentIndex[dogId] = (currentIndex[dogId] + step + dogImages[dogId].length) % dogImages[dogId].length;
+  document.getElementById("main-image-" + dogId).src = dogImages[dogId][currentIndex[dogId]];
+}
+
+function jumpToImage(dogId, index) {
+  if (!dogImages[dogId]) return;
+  currentIndex[dogId] = index;
+  document.getElementById("main-image-" + dogId).src = dogImages[dogId][index];
+}
+
+// Close modal if background clicked
+window.onclick = function(event) {
+  if (event.target.classList.contains("modal")) {
+    event.target.style.display = "none";
+  }
+};
+
+// ✅ Swap the main image when a thumbnail is clicked
+function swapImage(dogId, newSrc) {
+    let mainImg = document.getElementById("main-image-" + dogId);
+    if (mainImg) {
+        mainImg.src = newSrc;
+    }
+}
+</script>
+
+
+

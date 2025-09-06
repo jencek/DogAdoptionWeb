@@ -1535,3 +1535,39 @@ def dog_report(request):
             "chart_datasets_minutes": json.dumps(datasets_minutes),
         },
     )
+
+
+
+from django.shortcuts import render
+from .models import Dog
+
+from django.db.models import Q
+
+def public_dog_list(request):
+    query = request.GET.get("q", "")
+    breed = request.GET.get("breed", "")
+    size = request.GET.get("size", "")
+
+    dogs = Dog.objects.filter(status="Available")
+
+    if query:
+        dogs = dogs.filter(name__icontains=query)
+    if breed:
+        dogs = dogs.filter(breed=breed)
+    if size:
+        dogs = dogs.filter(size=size)
+
+    breeds = Dog.objects.values_list("breed", flat=True).distinct().order_by("breed")
+    sizes = Dog.objects.values_list("size", flat=True).distinct().order_by("size")
+
+    # Prefetch related DogURL images
+    dogs = dogs.prefetch_related("dogurl_set")
+
+    return render(request, "public_dog_list.html", {
+        "dogs": dogs,
+        "query": query,
+        "breed": breed,
+        "size": size,
+        "breeds": breeds,
+        "sizes": sizes,
+    })
