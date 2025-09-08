@@ -6,14 +6,76 @@
     <meta charset="UTF-8">
     <title>Adopt a Dog</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: url("/static/images/happy_retriever.png") no-repeat center center fixed;
-            background-size: cover;
-            backdrop-filter: blur(3px); /* slight blur for text readability */
-            margin: 0;
-            padding: 0;
-        }
+  
+
+
+
+/* Golden-orange background container */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #FFD580;
+    overflow-x: hidden; /* prevent horizontal scroll */
+    position: relative;
+}
+
+/* Create animated paw print layer using pseudo-element */
+body::before {
+    content: "";
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url("{% static 'images/pawprint.png' %}");
+    background-repeat: repeat;
+    background-size: 80px 80px;
+    opacity: 0.1; /* subtle */
+    z-index: -1;
+    animation: driftPaws 30s linear infinite;
+}
+
+/* Drift animation: diagonal movement */
+@keyframes driftPaws {
+    0% {
+        transform: translate(0, 0);
+    }
+    100% {
+        transform: translate(200px, 200px); /* adjust distance as desired */
+    }
+}
+
+/* Dog cards */
+.dog-card {
+    background: rgba(255, 255, 255, 0.85); /* semi-transparent so background shows through */
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dog-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         .container {
             max-width: 1000px;
             margin: 0 auto;
@@ -300,12 +362,15 @@
 /* Fix image cropping */
 .dog-card img {
     width: 100%;
-    max-height: 220px;
+    max-height: 250px;
     object-fit: contain;   /* prevent cropping */
     background: #f4f4f4;   /* neutral backdrop behind transparent areas */
     border-radius: 10px;
-    padding: 5px;          /* so image doesn’t touch edges */
+    /*padding: 5px;*/          /* so image doesn’t touch edges */
 }
+
+
+
 
 /* Fade-in upward animation */
 @keyframes fadeInUp {
@@ -430,20 +495,23 @@
 
 
 <script>
-let dogImages = {};  // Store all images for each dog
-let currentIndex = {}; // Track current index
+
+let dogImages = {};   // Store all images per dog
+let currentIndex = {}; // Track index
+let activeDogId = null; // Track which modal is open
 
 function openModal(id) {
   document.getElementById("modal-" + id).style.display = "block";
+  activeDogId = id;
 
-  // Collect all images for this dog (main + extras)
+  // Collect all images (main + extras)
   const imgs = [];
   const main = document.querySelector(`#modal-${id} .modal-main-image img`);
   if (main) imgs.push(main.src);
 
   const extras = document.querySelectorAll(`#modal-${id} .modal-images img`);
   extras.forEach(img => {
-    if (!imgs.includes(img.src)) { imgs.push(img.src); }
+    if (!imgs.includes(img.src)) imgs.push(img.src);
   });
 
   dogImages[id] = imgs;
@@ -452,35 +520,47 @@ function openModal(id) {
 
 function closeModal(id) {
   document.getElementById("modal-" + id).style.display = "none";
+  activeDogId = null;
 }
 
 function changeImage(dogId, step) {
   if (!dogImages[dogId]) return;
-  currentIndex[dogId] = (currentIndex[dogId] + step + dogImages[dogId].length) % dogImages[dogId].length;
-  document.getElementById("main-image-" + dogId).src = dogImages[dogId][currentIndex[dogId]];
+  currentIndex[dogId] =
+    (currentIndex[dogId] + step + dogImages[dogId].length) %
+    dogImages[dogId].length;
+  document.getElementById("main-image-" + dogId).src =
+    dogImages[dogId][currentIndex[dogId]];
 }
 
 function jumpToImage(dogId, index) {
   if (!dogImages[dogId]) return;
   currentIndex[dogId] = index;
-  document.getElementById("main-image-" + dogId).src = dogImages[dogId][index];
+  document.getElementById("main-image-" + dogId).src =
+    dogImages[dogId][index];
 }
 
-// Close modal if background clicked
-window.onclick = function(event) {
+// ✅ Keyboard controls
+document.addEventListener("keydown", function (event) {
+  if (!activeDogId) return; // Only if modal is open
+
+  if (event.key === "ArrowLeft") {
+    changeImage(activeDogId, -1);
+  } else if (event.key === "ArrowRight") {
+    changeImage(activeDogId, 1);
+  } else if (event.key === "Escape") {
+    closeModal(activeDogId);
+  }
+});
+
+// Close if clicked outside modal content
+window.onclick = function (event) {
   if (event.target.classList.contains("modal")) {
     event.target.style.display = "none";
+    activeDogId = null;
   }
 };
-
-// ✅ Swap the main image when a thumbnail is clicked
-function swapImage(dogId, newSrc) {
-    let mainImg = document.getElementById("main-image-" + dogId);
-    if (mainImg) {
-        mainImg.src = newSrc;
-    }
-}
 </script>
+
 
 
 
