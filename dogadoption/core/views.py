@@ -55,6 +55,44 @@ from .serializers import DogSerializer
 from django.db.models.functions import Lower
 
 from .models import DogSnapshotLog
+import socket
+
+
+
+import paho.mqtt.client as mqtt
+# MQTT broker settings
+BROKER = "192.168.1.146"   # replace with broker IP/hostname
+PORT = 1883                           # 8883 if using TLS
+TOPIC = "dogs/adoption/updates"
+CLIENT_ID = "dogrescue_publisher"
+
+# Authentication
+USERNAME = "wombat"
+PASSWORD = "wombat"
+
+def publish_message(message: str):
+    # Create client
+    client = mqtt.Client(client_id=CLIENT_ID)
+
+    # Set username and password
+    client.username_pw_set(USERNAME, PASSWORD)
+
+    # Connect to broker
+    client.connect(BROKER, PORT, 60)
+
+    # Publish message
+    result = client.publish(TOPIC, message)
+
+    # Check if publish was successful
+    if result.rc == mqtt.MQTT_ERR_SUCCESS:
+        print(f"✅ Message sent to {TOPIC}: {message}")
+    else:
+        print("❌ Failed to publish message")
+
+    # Disconnect
+    client.disconnect()
+
+
 
 
 def register(request):
@@ -179,6 +217,7 @@ def full_snapshot_dogs(request):
     created = 0
     updated = 0
     action_log = ""
+    add_remove_log = ""
 
     for idx, dog_data in enumerate(request.data):
         nameext = dog_data.get('nameext')
@@ -207,6 +246,8 @@ def full_snapshot_dogs(request):
     	        )
             created += 1
             action_log += f"created dog: name: { dog_data.get('name') }, breed: { dog_data.get('breed') } \n"
+
+            add_remove_log += f"created dog: name: { dog_data.get('name') }, breed: { dog_data.get('breed') } \n"
 
         else:
             # handle an incoming record where the existing dog's status is one of the following:
@@ -260,6 +301,7 @@ def full_snapshot_dogs(request):
     print(deactivated)
     for y in deactivated:
         action_log += f"Deactivating: {y.name}\n"
+        add_remove_log += f"Deactivating: {y.name}\n"
 
         #remove friend dog references to the dog being deactivated
 
@@ -279,14 +321,26 @@ def full_snapshot_dogs(request):
     )
 
 
+    if add_remove_log != "":
+        try:
+            publish_message(add_remove_log)
+    
+        except (ConnectionRefusedError, socket.gaierror, OSError) as e:
+            print(f"❌ Network/connection error: {e}")
+        except ssl.SSLError as e:
+            print(f"❌ SSL/TLS error: {e}")
+        except ValueError as e:
+            print(f"❌ Configuration error: {e}")
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+
+
     return Response({
         'created': created,
         'updated': updated,
         'deactivated': deactivated,
         'errors': errors
     })
-
-
 
 
 
