@@ -1,0 +1,138 @@
+
+{% extends 'core/base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+
+
+
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dog Reports</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>🐾 Dog Reports</h1>
+
+  <form method="get">
+    {{ form.as_p }}
+    <button type="submit">Filter</button>
+  </form>
+
+  <!-- Overlay chart -->
+  <h2>Weekly Dog Additions vs. Deactivations</h2>
+  <canvas id="dogChart" width="600" height="300"></canvas>
+
+  <!-- Cumulative chart -->
+  <h2>Cumulative Shelter Population</h2>
+  <canvas id="cumulativeChart" width="600" height="300"></canvas>
+
+  <script>
+    const additionsData = {{ additions_data|safe }};
+    const deactivationsData = {{ deactivations_data|safe }};
+
+    // Merge all weeks from both datasets
+    const allWeeks = Array.from(new Set([
+      ...Object.keys(additionsData),
+      ...Object.keys(deactivationsData)
+    ])).sort();
+
+    // Weekly values
+    const additionsCounts = allWeeks.map(week => additionsData[week] || 0);
+    const deactivationsCounts = allWeeks.map(week => deactivationsData[week] || 0);
+    const netChangeCounts = allWeeks.map(
+      (week, idx) => additionsCounts[idx] - deactivationsCounts[idx]
+    );
+
+    // --- Chart 1: Overlay of additions, deactivations, net change ---
+    new Chart(document.getElementById('dogChart'), {
+      type: 'line',
+      data: {
+        labels: allWeeks,
+        datasets: [
+          {
+            label: 'Dog Additions',
+            data: additionsCounts,
+            borderColor: 'green',
+            backgroundColor: 'rgba(0, 128, 0, 0.2)',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'Dog Deactivations (Adoptions)',
+            data: deactivationsCounts,
+            borderColor: 'red',
+            backgroundColor: 'rgba(255, 0, 0, 0.2)',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'Net Change',
+            data: netChangeCounts,
+            borderColor: 'blue',
+            backgroundColor: 'rgba(0, 0, 255, 0.1)',
+            fill: false,
+            borderDash: [5, 5],
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          title: { display: true, text: 'Weekly Dog Additions vs. Deactivations' },
+          tooltip: { enabled: true }
+        },
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'Number of Dogs' } },
+          x: { title: { display: true, text: 'Week' } }
+        }
+      }
+    });
+
+// --- Chart 2: Cumulative shelter population ---
+let cumulative = {{ starting_population|default:0 }};
+const cumulativeCounts = allWeeks.map((week, idx) => {
+  cumulative += additionsCounts[idx] - deactivationsCounts[idx];
+  return cumulative;
+});
+
+new Chart(document.getElementById('cumulativeChart'), {
+  type: 'line',
+  data: {
+    labels: allWeeks,
+    datasets: [
+      {
+        label: 'Cumulative Shelter Population',
+        data: cumulativeCounts,
+        borderColor: 'purple',
+        backgroundColor: 'rgba(128, 0, 128, 0.2)',
+        fill: true,
+        tension: 0.3
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: { display: true, text: 'Cumulative Dog Population Over Time' },
+      tooltip: { enabled: true }
+    },
+    scales: {
+      y: { beginAtZero: true, title: { display: true, text: 'Dogs in Shelter' } },
+      x: { title: { display: true, text: 'Week' } }
+    }
+  }
+});
+
+
+
+  </script>
+</body>
+</html>
+
+
+{% endblock %}

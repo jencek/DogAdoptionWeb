@@ -1625,3 +1625,92 @@ def public_dog_list(request):
         "breeds": breeds,
         "sizes": sizes,
     })
+
+
+
+
+
+
+
+# reports/views.py
+from django.shortcuts import render
+from django.db.models.functions import TruncWeek
+from django.db.models import Count
+from .forms import ReportForm
+from core.models import Dog  # adjust if your Dog model is in another app
+from django.utils.timezone import make_aware
+
+def dog_movement_reports(request):
+    form = ReportForm(request.GET or None)
+    starting_population = 0
+    if form.is_valid():
+        start_date = form.cleaned_data["start_date"]
+        end_date = form.cleaned_data["end_date"]
+
+        additions = (
+            Dog.objects.filter(creation_date__range=[start_date, end_date])
+            .annotate(week=TruncWeek("creation_date"))
+            .values("week")
+            .annotate(count=Count("id"))
+            .order_by("week")
+        )
+
+        deactivations = (
+            Dog.objects.filter(adoption_date__range=[start_date, end_date])
+            .annotate(week=TruncWeek("adoption_date"))
+            .values("week")
+            .annotate(count=Count("id"))
+            .order_by("week")
+        )
+
+        additions_data = {a["week"].strftime("%Y-%m-%d"): a["count"] for a in additions}
+        deactivations_data = {d["week"].strftime("%Y-%m-%d"): d["count"] for d in deactivations}
+
+
+
+        # ---- NEW: compute starting population ----
+        # Find earliest week in our data
+        all_weeks = sorted(set(additions_data.keys()) | set(deactivations_data.keys()))
+        starting_population = 0
+        if all_weeks:
+            print("in all weeks")
+            first_week = all_weeks[0]
+
+            parts = first_week.split('-')
+            year = int(parts[0])
+            week = int(parts[1])
+
+            # Get first day of that ISO week
+            #start_date = datetime.strptime(f'{year}-W{week}-1', "%Y-W%W-%w")
+            #start_date = make_aware(start_date)
+            print(f"start date: { start_date }")
+
+            # Count dogs active before the reporting period
+            starting_population = Dog.objects.filter(
+                creation_date__lt=start_date,
+            ).exclude(status__in=['Adopted', 'Deceased']).count()
+
+
+
+            print(Dog.objects.filter(
+                creation_date__lt=start_date,
+            ).exclude(status__in=['Adopted', 'Deceased']).query)
+
+            print(f"starting pop { starting_population }")
+
+
+
+    else:
+        additions_data, deactivations_data = {}, {}
+
+    context = {
+        "form": form,
+        "additions_data": additions_data,
+        "deactivations_data": deactivations_data,
+        "starting_population": starting_population,  # pass to template
+    }
+    return render(request, "dog_movement_report.html", context)
+
+
+
+

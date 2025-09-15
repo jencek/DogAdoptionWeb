@@ -274,3 +274,29 @@ class DogFosterAssignmentForm(forms.ModelForm):
         fields = ['dog', 'foster', 'start_date', 'end_date', 'notes']
 
 
+
+
+# reports/forms.py
+from django import forms
+import datetime
+
+class ReportForm(forms.Form):
+    start_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"})
+    )
+    end_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"})
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get("end_date"):
+            cleaned_data["end_date"] = datetime.date.today()
+        if not cleaned_data.get("start_date"):
+            cleaned_data["start_date"] = cleaned_data["end_date"] - datetime.timedelta(weeks=8)
+        return cleaned_data
+
+
+

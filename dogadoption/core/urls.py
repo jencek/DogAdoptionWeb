@@ -129,5 +129,14 @@ urlpatterns += [
     path("adopt/", public_dog_list, name="public_dog_list"),
 ]
 
+# reports/urls.py
+from django.urls import path
+from . import views
+
+urlpatterns += [
+    path("dog-reports/", views.dog_movement_reports, name="dog_reports"),
+]
+
+
 
 
