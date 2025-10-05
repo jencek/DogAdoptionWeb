@@ -121,9 +121,10 @@ class DogUpdateForm(forms.ModelForm):
                 attrs={'class': 'form-control', 'type': 'date', 'style': 'width: 200px;'},
                 format='%Y-%m-%d'
             ),
-            'colour': forms.TextInput(attrs={'class': 'form-control'}),
+            #'colour': forms.TextInput(attrs={'class': 'form-control'}),
             'bonded_pair_dog': forms.HiddenInput(), 
             'friend_dog1': forms.HiddenInput(), 
+            'change_log': forms.Textarea(attrs={'rows': 15, 'cols': 40, 'class': 'form-control'}),
         }
 
 
@@ -212,6 +213,15 @@ class DogReadonlyForm(forms.ModelForm):
                 format='%Y-%m-%d'
             ),
             'colour' : forms.TextInput(attrs={'class': 'form-control'}),
+
+            'change_log': forms.Textarea(
+                attrs={
+                    'rows': 15,
+                    'cols': 40,
+                    'class': 'form-control',
+                    'placeholder': 'Enter notes here...'
+                },
+            ),
         }
     # def __init__(self, *args, readonly=True, **kwargs):
     #         super().__init__(*args,  **kwargs)

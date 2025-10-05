@@ -176,34 +176,71 @@ def bulk_upsert_dogs(request):
 
 
 
+from datetime import datetime
+
 def update_instance_fields(instance, data, fields):
     """
     Updates the instance fields only if values have changed.
-    
+
     Args:
         instance: Django model instance
         data: dict of new field values
         fields: list of field names to check and update
-    
+
     Returns:
-        (bool, list): (was_updated, list_of_changed_fields)
+        (bool, dict): (was_updated, changes)
+            where changes is a dict of:
+            {
+                "field_name": {"old": old_value, "new": new_value}
+            }
     """
     was_updated = False
-    changed_fields = []
+    changes = {}
 
     for field in fields:
         new_value = data.get(field)
-        if getattr(instance, field) != new_value:
+        old_value = getattr(instance, field)
+
+        if old_value != new_value:
             setattr(instance, field, new_value)
             was_updated = True
-            changed_fields.append(field)
-    
-    if was_updated:
-    	setattr(instance, 'update_date', str(datetime.today().date())) 
-    	instance.save()
-    
-    return was_updated, changed_fields
+            if field != "notes":
+                changes[field] = {"old": old_value, "new": new_value}
 
+    if was_updated:
+        setattr(instance, 'update_date', str(datetime.today().date()))
+        instance.save()
+
+    return was_updated, changes
+
+
+
+
+
+
+from collections import deque
+
+MAX_CHANGE_LOG_ENTRIES = 100  # cap per dog
+
+def append_to_change_log(dog, log_entry):
+    """
+    Append an entry to dog's change_log, newest first, capped at MAX_CHANGE_LOG_ENTRIES.
+    """
+    print("incomingg dog:")
+    print(dog)
+    existing_log = (dog.change_log or "").strip().splitlines()
+    print(f"dog.changed: { dog.change_log }")
+
+    print(f"existing log: { existing_log }")
+
+    # store newest first
+    dq = deque(existing_log, maxlen=MAX_CHANGE_LOG_ENTRIES)
+
+    # add new entry at the start instead of the end
+    dq.appendleft(log_entry.strip())
+
+    # join back together (already newest first now)
+    dog.change_log = "\n".join(dq)
 
 
 
@@ -227,33 +264,32 @@ def full_snapshot_dogs(request):
 
         incoming_ids.add(nameext)
 
-
-		# new update create
+        # --- Find or create dog ---
         dog = Dog.objects.filter(nameext=nameext).first()
         if dog is None:
             dog = Dog.objects.create(
                 nameext=nameext,
                 name=dog_data.get('name'),
-        	    breed=dog_data.get('breed'),
-        	    age=dog_data.get('age'),
-        	    sex=dog_data.get('sex'),
-        	    url=dog_data.get('url'),
-        	    colour=dog_data.get('colour'),
-				size=dog_data.get('size'),
-				notes=dog_data.get('notes'),
-        	    status=dog_data.get('status', 'Available'),
-        	    image = dog_data.get('image'),
-    	        )
+                breed=dog_data.get('breed'),
+                age=dog_data.get('age'),
+                sex=dog_data.get('sex'),
+                url=dog_data.get('url'),
+                colour=dog_data.get('colour'),
+                size=dog_data.get('size'),
+                notes=dog_data.get('notes'),
+                status=dog_data.get('status', 'Available'),
+                image=dog_data.get('image'),
+            )
             created += 1
-            action_log += f"created dog: name: { dog_data.get('name') }, breed: { dog_data.get('breed') } \n"
+            log_entry = f"[{datetime.now()}] Created dog: name={dog.name}, breed={dog.breed}"
+            action_log += log_entry + "\n"
+            add_remove_log += log_entry + "\n"
 
-            add_remove_log += f"created dog: name: { dog_data.get('name') }, breed: { dog_data.get('breed') } \n"
+            append_to_change_log(dog, log_entry)
+            dog.save(update_fields=["change_log"])
 
         else:
-            # handle an incoming record where the existing dog's status is one of the following:
-            #     Adopted -> new status is Adopted-Returned
-            #     Fostered -> leave as fostered
-            #     other -> set tho Active
+            # --- Status update logic ---
             cur_status = dog.status
             if cur_status in ['Adopted', 'Adopted-Ret']:
                 new_status = 'Adopted-Ret'
@@ -264,6 +300,7 @@ def full_snapshot_dogs(request):
             else:
                 new_status = 'Available'
 
+            # --- Update instance fields ---
             was_updated, changed_fields = update_instance_fields(
                 dog,
                 {
@@ -271,47 +308,65 @@ def full_snapshot_dogs(request):
                     'breed': dog_data.get('breed'),
                     'age': dog_data.get('age'),
                     'sex': dog_data.get('sex'),
-           	    	'url': dog_data.get('url'),
-        	    	'colour': dog_data.get('colour'),
-					'size': dog_data.get('size'),
-					'notes': dog_data.get('notes'),
-                    'status': new_status, #dog_data.get('status', 'Available'),
-                    'image': dog_data.get('image')
+                    'url': dog_data.get('url'),
+                    'colour': dog_data.get('colour'),
+                    'size': dog_data.get('size'),
+                    'notes': dog_data.get('notes'),
+                    'status': new_status,
+                    'image': dog_data.get('image'),
                 },
-        		fields=['name', 'breed', 'age', 'sex','url', 'colour', 'size', 'notes','status','image']
+                fields=['name', 'breed', 'age', 'sex', 'url', 'colour', 'size', 'notes', 'status', 'image']
             )
+
             if was_updated:
                 updated += 1
-                print(f"****************Updated dog {dog.nameext}, fields changed: {changed_fields} *************")
-                action_log += f"Updated dog {dog.name}, fields changed: {changed_fields} \n"
+                #details = ", ".join(
+                #    [f"{field}: '{vals['old']}' → '{vals['new']}'" for field, vals in changed_fields.items()]
+                #)
+
+                details = ", ".join(
+                    [f"{field}: '{'..' if field == 'notes' else vals['old']}' → "
+                        f"'{ '..' if field == 'notes' else vals['new']}'"
+                            for field, vals in changed_fields.items()
+                    ]
+                )
 
 
-		# --- Handle additional URLs ---
+                log_entry = f"[{datetime.now()}] Updated dog {dog.nameext}: {details}"
+                print(f"**************** {log_entry} *************")
+
+                action_log += log_entry + "\n"
+                append_to_change_log(dog, log_entry)
+                dog.save(update_fields=["change_log"])
+
+        # --- Handle additional URLs ---
         urls = dog_data.get('images', [])
         if isinstance(urls, list):
-            DogURL.objects.filter(dog=dog).delete()  # clear previous
+            DogURL.objects.filter(dog=dog).delete()
             dogurl_objs = [DogURL(dog=dog, image=u) for u in urls if u]
             DogURL.objects.bulk_create(dogurl_objs)
 
+    # --- Deactivate dogs not in snapshot ---
+    deactivated_qs = Dog.objects.exclude(
+        Q(nameext__in=incoming_ids) |
+        Q(status__in=['Inactive', 'Adopted', 'Deceased']) |
+        Q(local_created_dog__in=[True])
+    )
 
+    for y in deactivated_qs:
+        log_entry = f"[{datetime.now()}] Deactivated dog: {y.name} (status '{y.status}' → 'Adopted')"
+        action_log += log_entry + "\n"
+        add_remove_log += log_entry + "\n"
 
-    # Deactivate dogs not in the incoming snapshot
-    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted','Deceased']) | Q(local_created_dog__in=[True]))
-    print("Deactivated dogs:")
-    print(deactivated)
-    for y in deactivated:
-        action_log += f"Deactivating: {y.name}\n"
-        add_remove_log += f"Deactivating: {y.name}\n"
+        append_to_change_log(y, log_entry)
+        y.status = 'Adopted'
+        y.adoption_date = datetime.today().date()
+        y.update_date = datetime.today().date()
+        y.save(update_fields=["status", "adoption_date", "update_date", "change_log"])
 
-        #remove friend dog references to the dog being deactivated
+    deactivated = deactivated_qs.count()
 
-        #remove bonded dog references the dog being deactivated
-
-
-    deactivated = Dog.objects.exclude( Q(nameext__in=incoming_ids) | Q(status__in=['Inactive','Adopted','Deceased']) | Q(local_created_dog__in=[True])).update(status='Adopted', adoption_date = datetime.today().date(), update_date = datetime.today().date())
-
-
-  # 🔹 Save to database log
+    # --- Save snapshot log ---
     DogSnapshotLog.objects.create(
         created=created,
         updated=updated,
@@ -320,11 +375,10 @@ def full_snapshot_dogs(request):
         details=action_log
     )
 
-
+    # --- Publish changes ---
     if add_remove_log != "":
         try:
             publish_message(add_remove_log)
-    
         except (ConnectionRefusedError, socket.gaierror, OSError) as e:
             print(f"❌ Network/connection error: {e}")
         except ssl.SSLError as e:
@@ -334,14 +388,12 @@ def full_snapshot_dogs(request):
         except Exception as e:
             print(f"❌ Unexpected error: {e}")
 
-
     return Response({
         'created': created,
         'updated': updated,
         'deactivated': deactivated,
         'errors': errors
     })
-
 
 
 

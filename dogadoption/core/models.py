@@ -58,6 +58,7 @@ class Dog(models.Model):
     #friend_dog5 = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='friend5')
     #friend_dog6 = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='friend6')
 
+    change_log = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
