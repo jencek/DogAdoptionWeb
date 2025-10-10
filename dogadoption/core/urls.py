@@ -134,9 +134,12 @@ from django.urls import path
 from . import views
 
 urlpatterns += [
-    path("dog-reports/", views.dog_movement_reports, name="dog_reports"),
+    path("dog-reports/movements", views.dog_movement_reports, name="dog_reports"),
 ]
 
+urlpatterns += [
+    path('dog-reports/walk_priority/', views.walk_priority_report, name='walk_priority_report'),
+]
 
 
 

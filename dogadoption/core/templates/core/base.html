@@ -163,8 +163,9 @@
               Reporting
             </a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item {% if request.path|startswith:'/dog-reports/' %}active{% endif %}" href="/dog-reports/">Dog Movement Reports</a></li>
+              <li><a class="dropdown-item {% if request.path|startswith:'/dog-reports/movements' %}active{% endif %}" href="/dog-reports/movements">Dog Movement Reports</a></li>
               <li><a class="dropdown-item {% if '/reports/dogs/' in request.path %}active{% endif %}" href="/reports/dogs/">Dog Walk Report</a></li>
+              <li><a class="dropdown-item {% if '/dog-reports/walk_priority/' in request.path %}active{% endif %}" href="/dog-reports/walk_priority/">Walk Priority Report</a></li>
             </ul>
           </li>
 

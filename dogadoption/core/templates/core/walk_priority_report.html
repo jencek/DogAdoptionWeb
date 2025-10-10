@@ -1,0 +1,78 @@
+{% extends 'core/base.html' %}
+{% block content %}
+
+<h2>🐾 Walk Priority Report (Live Update)</h2>
+
+<form id="filter-form" class="mb-3">
+  <div class="row">
+    <div class="col-md-3">
+      <label><strong>Walker capability:</strong></label>
+      <select name="walker_capability" class="form-control">
+        <option value="">All</option>
+        {% for value, label in walker_capability_choices %}
+          <option value="{{ value }}" {% if walker_capability == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label><strong>Show top:</strong></label>
+      <select name="limit" class="form-control">
+        {% for n in "10,20,50,100".split(',') %}
+          <option value="{{ n }}" {% if limit == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label><strong>Days weight:</strong> <span id="days_weight_val">{{ days_weight }}</span></label>
+      <input type="range" name="days_weight" min="0.5" max="5" step="0.1" value="{{ days_weight }}"
+             class="form-range" oninput="updateFilters()">
+    </div>
+
+    <div class="col-md-3">
+      <label><strong>Walks weight:</strong> <span id="walks_weight_val">{{ walks_weight }}</span></label>
+      <input type="range" name="walks_weight" min="0.5" max="5" step="0.1" value="{{ walks_weight }}"
+             class="form-range" oninput="updateFilters()">
+    </div>
+  </div>
+</form>
+
+<div id="results">
+  {% include 'core/walk_priority_table.html' %}
+</div>
+
+<script>
+async function updateFilters() {
+  const form = document.getElementById('filter-form');
+  const params = new URLSearchParams(new FormData(form)).toString();
+  const response = await fetch(window.location.pathname + '?' + params, {
+    headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  const data = await response.json();
+  updateTable(data.dogs);
+
+  // update slider labels
+  document.getElementById('days_weight_val').textContent = form.days_weight.value;
+  document.getElementById('walks_weight_val').textContent = form.walks_weight.value;
+}
+
+function updateTable(dogs) {
+  const tbody = document.querySelector('#results tbody');
+  tbody.innerHTML = dogs.map(d => `
+    <tr>
+      <td><a href="${d.url}" target="_blank">${d.name}</a></td>
+      <td>${d.status}</td>
+      <td>${d.walker_capability}</td>
+      <td>${d.last_walk ?? 'Never'}</td>
+      <td>${d.days_since_last_walk}</td>
+      <td>${d.recent_walks}</td>
+      <td><strong>${d.priority_score}</strong></td>
+    </tr>
+  `).join('');
+}
+
+document.querySelectorAll('#filter-form select').forEach(sel => sel.addEventListener('change', updateFilters));
+</script>
+
+{% endblock %}

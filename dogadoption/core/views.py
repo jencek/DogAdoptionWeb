@@ -1764,5 +1764,63 @@ def dog_movement_reports(request):
     return render(request, "dog_movement_report.html", context)
 
 
+from django.shortcuts import render
+from django.db.models import Max
+from datetime import date, timedelta
+from .models import Dog, DogWalk
 
+def walk_priority_report(request):
+    walker_capability = request.GET.get("walker_capability")
+    limit = int(request.GET.get("limit", 20))
+    limits = [10, 20, 50, 100]
+
+    today = date.today()
+    two_weeks_ago = today - timedelta(days=14)
+
+    dogs = Dog.objects.filter(status="Available")
+    if walker_capability:
+        dogs = dogs.filter(walker_capability=walker_capability)
+
+    # calculate scores for the dogs
+    #
+    dogs_data = []
+    for dog in dogs:
+        last_walk = (
+            DogWalk.objects.filter(dog=dog)
+            .aggregate(last=Max("walk_date"))["last"]
+        )
+        days_since_last = (today - last_walk).days if last_walk else 999
+        walks_last_2w = DogWalk.objects.filter(dog=dog, walk_date__gte=two_weeks_ago).count()
+
+        # simple score based on days since last walk and number of walks in the last two weeks
+        priority_score = days_since_last - (walks_last_2w * 5)
+
+        # Determine row color class based on priority
+        if priority_score >= 60:
+            priority_class = "table-danger"  # red
+        elif priority_score >= 40:
+            priority_class = "table-warning"  # orange
+        elif priority_score >= 20:
+            priority_class = "table-info"  # light blue
+        else:
+            priority_class = "table-success"  # green
+
+        dogs_data.append({
+            "dog": dog,
+            "days_since_last": days_since_last,
+            "walks_last_2w": walks_last_2w,
+            "priority_score": priority_score,
+            "priority_class": priority_class,
+        })
+
+    dogs_data.sort(key=lambda x: x["priority_score"], reverse=True)
+    dogs_data = dogs_data[:limit]
+
+    context = {
+        "dogs": dogs_data,
+        "walker_capability": walker_capability or "",
+        "limits": limits,
+        "limit": limit,
+    }
+    return render(request, "core/walk_priority_table.html", context)
 
