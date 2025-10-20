@@ -247,7 +247,12 @@ def extract_dog_data(n):
                         #print(target_url)
                     else:
                         target_url - ""
-
+                else:
+                    # no imag eoor no data-src, set to None
+                    target_url = ""
+            else:
+                # no image_tag, set to None
+                target_url = ""
 
             #
             # Get Notes for dog
@@ -275,6 +280,10 @@ def extract_dog_data(n):
                                 #print(gal_url)
                                 the_url = download_image_to_media_folder(gal_url, subfolder='dog_images')
                                 images_list.append(the_url)
+
+                                #if the main image was missing set it to the first of the additionall images
+                                if target_url == "":
+                                    target_url = the_url
 
 
             dog_data = {
