@@ -13,7 +13,7 @@ from .models import FosterHome
 
 from django.views.generic import  DetailView, UpdateView, DeleteView
 
-
+from django.db import transaction
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -342,9 +342,16 @@ def full_snapshot_dogs(request):
         # --- Handle additional URLs ---
         urls = dog_data.get('images', [])
         if isinstance(urls, list):
-            DogURL.objects.filter(dog=dog).delete()
+            #DogURL.objects.filter(dog=dog).delete()
+            #dogurl_objs = [DogURL(dog=dog, image=u) for u in urls if u]
+            #DogURL.objects.bulk_create(dogurl_objs)
+
             dogurl_objs = [DogURL(dog=dog, image=u) for u in urls if u]
-            DogURL.objects.bulk_create(dogurl_objs)
+            with transaction.atomic():
+                DogURL.objects.filter(dog=dog).delete()
+                DogURL.objects.bulk_create(dogurl_objs)    
+
+
 
     # --- Deactivate dogs not in snapshot ---
     deactivated_qs = Dog.objects.exclude(
@@ -1769,51 +1776,80 @@ from django.db.models import Max
 from datetime import date, timedelta
 from .models import Dog, DogWalk
 
+from datetime import date, timedelta
+from django.db.models import Max
+from django.shortcuts import render
+from .models import Dog, DogWalk
+
+
 def walk_priority_report(request):
     walker_capability = request.GET.get("walker_capability")
     limit = int(request.GET.get("limit", 20))
     limits = [10, 20, 50, 100]
 
+    order_by = request.GET.get("order_by", "days")  # 'days', 'week', 'last2weeks'
+
     today = date.today()
-    two_weeks_ago = today - timedelta(days=14)
+    start_of_week = today - timedelta(days=today.weekday())  # Monday this week
+    start_of_last_week = start_of_week - timedelta(days=7)
+    start_of_two_weeks_ago = start_of_week - timedelta(days=14)
+    end_of_last_week = start_of_week - timedelta(days=1)
 
     dogs = Dog.objects.filter(status="Available")
     if walker_capability:
         dogs = dogs.filter(walker_capability=walker_capability)
 
-    # calculate scores for the dogs
-    #
     dogs_data = []
+
     for dog in dogs:
-        last_walk = (
-            DogWalk.objects.filter(dog=dog)
-            .aggregate(last=Max("walk_date"))["last"]
-        )
+        last_walk = DogWalk.objects.filter(dog=dog).aggregate(last=Max("walk_date"))["last"]
         days_since_last = (today - last_walk).days if last_walk else 999
-        walks_last_2w = DogWalk.objects.filter(dog=dog, walk_date__gte=two_weeks_ago).count()
 
-        # simple score based on days since last walk and number of walks in the last two weeks
-        priority_score = days_since_last - (walks_last_2w * 5)
+        walks_this_week = DogWalk.objects.filter(
+            dog=dog, walk_date__gte=start_of_week
+        ).count()
 
-        # Determine row color class based on priority
-        if priority_score >= 60:
-            priority_class = "table-danger"  # red
-        elif priority_score >= 40:
-            priority_class = "table-warning"  # orange
-        elif priority_score >= 20:
-            priority_class = "table-info"  # light blue
+        walks_last_2_weeks = DogWalk.objects.filter(
+            dog=dog, walk_date__gte=start_of_two_weeks_ago, walk_date__lt=start_of_week
+        ).count()
+
+        # Compute sort/priority depending on chosen ordering
+        if order_by == "days":
+            priority_score = days_since_last - (walks_last_2_weeks * 5)
+            sort_value = priority_score
+        elif order_by == "week":
+            sort_value = -walks_this_week
+            priority_score = walks_this_week
+        elif order_by == "last2weeks":
+            sort_value = -walks_last_2_weeks
+            priority_score = walks_last_2_weeks
         else:
-            priority_class = "table-success"  # green
+            sort_value = 0
+            priority_score = 0
+
+        # Row color based on recency of walk
+        if days_since_last >= 60:
+            priority_class = "table-danger"
+        elif days_since_last >= 40:
+            priority_class = "table-warning"
+        elif days_since_last >= 20:
+            priority_class = "table-info"
+        else:
+            priority_class = "table-success"
 
         dogs_data.append({
             "dog": dog,
+            "last_walk": last_walk,
             "days_since_last": days_since_last,
-            "walks_last_2w": walks_last_2w,
+            "walks_this_week": walks_this_week,
+            "walks_last_2_weeks": walks_last_2_weeks,
             "priority_score": priority_score,
             "priority_class": priority_class,
+            "sort_value": sort_value,
         })
 
-    dogs_data.sort(key=lambda x: x["priority_score"], reverse=True)
+    # Sort and truncate list
+    dogs_data.sort(key=lambda x: x["sort_value"], reverse=True)
     dogs_data = dogs_data[:limit]
 
     context = {
@@ -1821,6 +1857,7 @@ def walk_priority_report(request):
         "walker_capability": walker_capability or "",
         "limits": limits,
         "limit": limit,
+        "order_by": order_by,
     }
     return render(request, "core/walk_priority_table.html", context)
 
