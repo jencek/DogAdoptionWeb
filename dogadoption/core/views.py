@@ -58,7 +58,6 @@ from .models import DogSnapshotLog
 import socket
 
 
-
 import paho.mqtt.client as mqtt
 # MQTT broker settings
 BROKER = "192.168.1.146"   # replace with broker IP/hostname
@@ -69,6 +68,7 @@ CLIENT_ID = "dogrescue_publisher"
 # Authentication
 USERNAME = "wombat"
 PASSWORD = "wombat"
+
 
 def publish_message(message: str):
     # Create client
@@ -91,8 +91,6 @@ def publish_message(message: str):
 
     # Disconnect
     client.disconnect()
-
-
 
 
 def register(request):
@@ -133,12 +131,6 @@ class DogBulkCreateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
 
 
 @api_view(['POST'])
