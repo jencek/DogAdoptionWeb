@@ -59,7 +59,7 @@ from .models import Dog, DogURL
 # forms.py
 from django import forms
 from django.forms import modelformset_factory
-from .models import Dog, DogURL
+from .models import Dog, DogURL, DogVideo
 
 # widgets.py
 from django.forms.widgets import ClearableFileInput
@@ -87,6 +87,16 @@ class MultipleFileField(forms.FileField):
         return result
 
 # end workaround
+
+
+# added for dog video upload
+class DogVideoForm(forms.ModelForm):
+    class Meta:
+        model = DogVideo
+        fields = ["file", "caption"]
+
+
+
 
 class DogUpdateForm(forms.ModelForm):
  

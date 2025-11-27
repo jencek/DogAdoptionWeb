@@ -582,7 +582,7 @@ class DogCreateView(CreateView):
 from django.forms import modelformset_factory
 from django.shortcuts import redirect
 #from .forms import DogUpdateForm, DogURLFormSet
-from .models import Dog, DogURL
+from .models import Dog, DogURL, DogVideo
 import datetime
 
 class DogUpdateView(LoginRequiredMixin, UpdateView):
@@ -590,21 +590,18 @@ class DogUpdateView(LoginRequiredMixin, UpdateView):
     form_class = DogUpdateForm
     template_name = 'core/dog_edit_form.html'
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        #all_urls = DogURL.objects.filter(dog=self.object)
         context['MEDIA_URL'] = settings.MEDIA_URL
         context['dogurls'] = DogURL.objects.filter(dog=self.object)
+        context['dogvideos'] = DogVideo.objects.filter(dog=self.object)  # NEW
         return context
 
     def get(self, request, *args, **kwargs):
         referer = request.META.get('HTTP_REFERER')
         if referer:
             request.session['previous_page'] = referer
-        
         return super().get(request, *args, **kwargs)
-
 
     def form_invalid(self, form):
         print("Form is invalid:", form.errors)
@@ -614,23 +611,20 @@ class DogUpdateView(LoginRequiredMixin, UpdateView):
         self.object = self.get_object()
         print("processing post")
         form = self.form_class(request.POST, request.FILES, instance=self.object)
-        form2 = self.get_form()
-        print(f"is valid form: {form.is_valid()}")
-        print(f"is valid form2: {form2.is_valid()}")
+
+        # debug
+        print("is valid form:", form.is_valid())
+
         if form.is_valid():
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
 
-
-
-        
-
-
     def form_valid(self, form):
         self.object = form.save(commit=False)
         original = Dog.objects.get(pk=self.object.pk)
         print("in form_valid()*****")
+
         watched_fields = [
             'name', 'status', 'breed', 'age', 'sex', 'url', 'colour', 'size', 'notes',
             'adoption_date', 'health_status', 'vaccinated', 'neutered',
@@ -644,36 +638,36 @@ class DogUpdateView(LoginRequiredMixin, UpdateView):
         if changed:
             self.object.update_date = datetime.today().date()
 
-
+        # Bonded pair logic
         new_bond = form.cleaned_data.get('bonded_pair_dog')
         old_bond = original.bonded_pair_dog
 
-        # 1. Remove reverse link from old bonded pair if it no longer applies
         if old_bond and old_bond != new_bond:
             old_bond.bonded_pair_dog = None
             old_bond.save()
 
-        # 2. Create or update reverse link on new bonded pair
         if new_bond and new_bond.bonded_pair_dog != self.object:
             new_bond.bonded_pair_dog = self.object
             new_bond.save()
 
-
-
-        # Save Dog
+        # Save dog
         self.object.save()
 
-        # Handle new image uploads
-        #print("iterate through new image files")
-        #print(self.request.FILES)
-
+        # ----------------------------
+        # Handle new IMAGE uploads
+        # ----------------------------
         for file in self.request.FILES.getlist('new_images'):
-            print(file)
+            print("new img:", file)
             DogURL.objects.create(dog=self.object, image=file)
 
+        # ----------------------------
+        # Handle new VIDEO uploads  <-- NEW
+        # ----------------------------
+        for file in self.request.FILES.getlist('new_videos'):
+            print("new video:", file)
+            DogVideo.objects.create(dog=self.object, file=file)
 
         return super().form_valid(form)
-
 
     def get_success_url(self):
         return self.request.session.pop('previous_page', reverse_lazy('dog_list'))
@@ -1317,6 +1311,34 @@ def dog_search(request):
     return JsonResponse([{"id": d.id, "name": d.name} for d in dogs], safe=False)
 
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+
+@require_POST
+@login_required
+def delete_dog_video(request, pk):
+    """
+    Deletes a DogVideo video file + DB entry.
+    Only accepts AJAX POST requests.
+    """
+    video = get_object_or_404(DogVideo, pk=pk)
+
+    # Optional: ensure user has permission to modify this dog’s data
+    # (Same logic you use for image deletion, if any)
+    # Example:
+    # if not request.user.is_staff:
+    #     return JsonResponse({"success": False, "error": "Not authorized"}, status=403)
+
+    # Delete the file itself
+    if video.file:
+        video.file.delete(save=False)
+
+    # Delete record
+    video.delete()
+
+    return JsonResponse({"success": True})
 
 
 
@@ -1666,7 +1688,7 @@ def public_dog_list(request):
     sizes = Dog.objects.values_list("size", flat=True).distinct().order_by("size")
 
     # Prefetch related DogURL images
-    dogs = dogs.prefetch_related("dogurl_set")
+    dogs = dogs.prefetch_related("dogurl_set",  "videos")
 
     return render(request, "public_dog_list.html", {
         "dogs": dogs,

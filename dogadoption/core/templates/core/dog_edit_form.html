@@ -234,6 +234,29 @@
         {{ form.new_images }}
     </div>
 
+<!-- Existing Videos -->
+<h3>Existing Videos</h3>
+<div id="dog-videos">
+    {% for vid in dogvideos %}
+        <div class="dog-video" data-id="{{ vid.id }}" style="margin:10px;">
+            <video width="250" controls preload="metadata" style="border-radius:10px;">
+                <source src="{{ vid.file.url }}">
+            </video>
+            <button type="button" class="delete-video" style="display:block; color:red; margin-top:5px;">
+                ❌
+            </button>
+        </div>
+    {% empty %}
+        <p>No videos uploaded yet.</p>
+    {% endfor %}
+</div>
+<div class="mb-3 mt-4">
+    <label>Add New Videos</label>
+    <input type="file" name="new_videos" multiple accept="video/*" class="form-control">
+</div>
+
+    
+
     <button type="submit" class="btn btn-success mt-3">Save</button>
 </form>
 
@@ -319,6 +342,35 @@ document.addEventListener('DOMContentLoaded', function () {
                         imageDiv.remove();
                     } else {
                         alert('Failed to delete image.');
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
+<!-- Delete Video JS -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.delete-video').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const videoDiv = btn.closest('.dog-video');
+            const videoId = videoDiv.dataset.id;
+
+            if (confirm('Delete this video?')) {
+                fetch(`/dog-video/${videoId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        videoDiv.remove();
+                    } else {
+                        alert('Failed to delete video.');
                     }
                 });
             }

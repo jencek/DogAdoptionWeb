@@ -73,6 +73,12 @@ class DogURL(models.Model):
         return f"{self.dog.name} - {self.image.url if self.image else 'No Image'}"
 
 
+class DogVideo(models.Model):
+    dog = models.ForeignKey(Dog, related_name="videos", on_delete=models.CASCADE)
+    file = models.FileField(upload_to="dog_videos/")
+    caption = models.CharField(max_length=255, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
 
 class DogWalker(models.Model):
     STATUS_CHOICES = [('Active', 'Active'), ('Inactive', 'Inactive')]

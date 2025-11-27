@@ -373,6 +373,13 @@ body::before {
 }
 
 
+.modal-videos video {
+    width: 100%;
+    border-radius: 12px;
+    margin-top: 10px;
+}
+
+
     </style>
 </head>
 <body>
@@ -460,6 +467,32 @@ body::before {
       {% endfor %}
     </div>
     {% endif %}
+
+
+    <!-- Video Gallery -->
+{% if dog.videos.all  %}
+<div class="modal-videos" style="margin-top:20px;">
+    <h3 style="text-align:center;">Videos</h3>
+
+    {% for vid in dog.videos.all %}
+
+        {% if vid.file %}
+        <video controls style="
+            width: 100%;
+            max-height: 350px;
+            border-radius: 12px;
+            background:#000;
+            margin-top:15px;
+            box-shadow:0 3px 10px rgba(0,0,0,0.2);
+        ">
+            <source src="{{ vid.file.url }}" type="video/mp4">
+            Your browser does not support video playback.
+        </video>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
 
     {% if dog.notes %}
     <div class="modal-notes">

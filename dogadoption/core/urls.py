@@ -139,7 +139,10 @@ urlpatterns += [
 
 urlpatterns += [
     path('dog-reports/walk_priority/', views.walk_priority_report, name='walk_priority_report'),
+    path('dog-video/<int:pk>/delete/', views.delete_dog_video, name='delete_dog_video'),
 ]
+
+
 
 
 
