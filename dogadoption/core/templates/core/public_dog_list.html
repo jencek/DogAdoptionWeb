@@ -392,7 +392,14 @@ body::before {
       cursor: pointer;
       border-radius: 8px;
       border: 1px solid #ccc;
+      transition: transform 0.15s ease;
   }
+
+  .video-thumb:hover {
+      transform: scale(1.05);
+  }
+
+
 
   /* Modal background */
   .video-modal {
@@ -540,14 +547,22 @@ body::before {
 {% endif %}
 
 {% if dog.videos.all  %}
+
+
 <div class="video-gallery">
     {% for vid in dog.videos.all %}
-        <video class="video-thumb" muted
+        <video class="video-thumb"
+               muted preload="metadata"
+               onmouseenter="this.play()"
+               onmouseleave="this.pause(); this.currentTime=0;"
                onclick="openVideoModal('{{ vid.file.url }}')">
             <source src="{{ vid.file.url }}" type="video/mp4">
         </video>
     {% endfor %}
 </div>
+
+
+
 
 
 <div id="videoModal" class="video-modal" onclick="closeVideoModal()">
