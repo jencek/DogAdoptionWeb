@@ -43,7 +43,7 @@ def publish_message(message: str):
 # Validation helper functions
 # -----------------------------
 
-AGE_PATTERN = re.compile(r"^(About\s+)?\d+\s+(year|years|yo|year old|years old|month|months)($|.*)", re.IGNORECASE)
+AGE_PATTERN = re.compile(r"^(About\s+)?\d+\s+(year|years|yo|year old|years old|month|months|week|weeks)($|.*)", re.IGNORECASE)
 COLOUR_PATTERN = re.compile(r"^(?=.*\S).+$")
 
 
