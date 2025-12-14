@@ -448,6 +448,20 @@ body::before {
     End - new styles for thumbnail videos
 */
 
+#videoModal {
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;         /* JS sets display:flex */
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.8);
+    z-index: 99999;
+    padding: 20px;
+    box-sizing: border-box;
+}
 
 
     </style>
@@ -491,7 +505,7 @@ body::before {
     {% for dog in dogs %}
     <div class="dog-card" onclick="openModal({{ dog.id }})">
         {% if dog.image %}
-            <img src="{{ dog.image.url }}" alt="{{ dog.name }}">
+            <img loading="lazy"  src="{{ dog.image.url }}" alt="{{ dog.name }}">
         {% else %}
             <img src="{% static 'images/no-image.png' %}" alt="No Image">
         {% endif %}
@@ -516,7 +530,7 @@ body::before {
       <span class="prev" onclick="changeImage('{{ dog.id }}', -1)">&#10094;</span>
 
       {% if dog.image %}
-      <img id="main-image-{{ dog.id }}" src="{{ dog.image.url }}" alt="{{ dog.name }}">
+      <img loading="lazy"  id="main-image-{{ dog.id }}" src="{{ dog.image.url }}" alt="{{ dog.name }}">
       {% else %}
       <img id="main-image-{{ dog.id }}" src="{% static 'images/no-image.png' %}" alt="No Image">
       {% endif %}
@@ -528,11 +542,11 @@ body::before {
     {% if dog.dogurl_set.all %}
     <div class="modal-images">
       {% if dog.image %}
-        <img src="{{ dog.image.url }}" alt="{{ dog.name }} main" onclick="jumpToImage('{{ dog.id }}', 0)">
+        <img loading="lazy"  src="{{ dog.image.url }}" alt="{{ dog.name }} main" onclick="jumpToImage('{{ dog.id }}', 0)">
       {% endif %}
       {% for extra in dog.dogurl_set.all %}
       {% if extra.image %}
-      <img src="{{ extra.image.url }}" alt="{{ dog.name }} extra" onclick="jumpToImage('{{ dog.id }}', {{ forloop.counter }})">
+      <img loading="lazy" src="{{ extra.image.url }}" alt="{{ dog.name }} extra" onclick="jumpToImage('{{ dog.id }}', {{ forloop.counter }})">
       {% endif %}
       {% endfor %}
     </div>
@@ -549,12 +563,15 @@ body::before {
 {% if dog.videos.all  %}
 
 
+
 <div class="video-gallery">
     {% for vid in dog.videos.all %}
-        <video class="video-thumb"
-               muted preload="metadata"
+        <video class="video-thumb no-autoplay"
+               muted
+               playsinline
+               preload="metadata"
                onmouseenter="this.play()"
-               onmouseleave="this.pause(); this.currentTime=0;"
+               onmouseleave="this.pause(); this.currentTime = 0;"
                onclick="openVideoModal('{{ vid.file.url }}')">
             <source src="{{ vid.file.url }}" type="video/mp4">
         </video>
@@ -563,45 +580,10 @@ body::before {
 
 
 
-
-
-<div id="videoModal" class="video-modal" onclick="closeVideoModal()">
-  <div class="video-modal-content" onclick="event.stopPropagation()">
-      <span class="video-modal-close" onclick="closeVideoModal()">&times;</span>
-      <video id="videoModalPlayer" controls>
-          <source id="videoModalSource" src="" type="video/mp4">
-      </video>
-  </div>
-</div>
-
 {% endif %}
 
 
-<!--
-{% if dog.videos.all  %}
-<div class="modal-videos" style="margin-top:20px;">
-    <h3 style="text-align:center;">Videos</h3>
 
-    {% for vid in dog.videos.all %}
-
-        {% if vid.file %}
-        <video controls style="
-            width: 100%;
-            max-height: 350px;
-            border-radius: 12px;
-            background:#000;
-            margin-top:15px;
-            box-shadow:0 3px 10px rgba(0,0,0,0.2);
-        ">
-            <source src="{{ vid.file.url }}" type="video/mp4">
-            Your browser does not support video playback.
-        </video>
-        {% endif %}
-    {% endfor %}
-</div>
-{% endif %}
-
--->
     {% if dog.notes %}
     <div class="modal-notes">
       <h4>Notes</h4>
@@ -617,11 +599,44 @@ body::before {
 
 
     </div>
+
+    <div id="videoModal" class="video-modal" onclick="closeVideoModal()">
+  <div class="video-modal-content" onclick="event.stopPropagation()">
+      <span class="video-modal-close" onclick="closeVideoModal()">&times;</span>
+      <video id="videoModalPlayer" controls>
+          <source id="videoModalSource" src="" type="video/mp4">
+      </video>
+  </div>
+</div>
+
 </body>
 </html>
 
 
 
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    // Very reliable mobile-test: checks touch + screen size + UA
+    const isMobile = (
+        ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+        /iPhone|iPad|Android|Mobile|SamsungBrowser/i.test(navigator.userAgent)
+    );
+
+    const thumbs = document.querySelectorAll(".video-thumb");
+
+    if (isMobile) {
+        thumbs.forEach(v => {
+            v.setAttribute("autoplay", "");
+            v.setAttribute("loop", "");
+            v.play().catch(err => {
+                console.log("Mobile autoplay blocked:", err);
+            });
+        });
+    }
+});
+</script>
 
 <script>
 
@@ -692,14 +707,34 @@ window.onclick = function (event) {
 
 <script>
 function openVideoModal(url) {
+    console.log("opening video");
+
     const modal = document.getElementById("videoModal");
     const player = document.getElementById("videoModalPlayer");
     const source = document.getElementById("videoModalSource");
 
-    source.src = url;
-    player.load();
+    console.log("set modal, player and source: "+url)
+
+    // 1. Show modal FIRST
     modal.style.display = "flex";
+
+    // 2. Set video source
+    source.src = url;
+
+    // 3. Delay load() until the browser has rendered the modal
+    setTimeout(() => {
+        player.load();
+
+        console.log("player loaded")
+        // Chrome autoplay rules:
+        player.muted = true;     // Required if you want autoplay
+        player.play().catch(err => {
+            console.warn("Autoplay blocked:", err);
+        });
+        console.log("post play")
+    }, 50);
 }
+
 
 function closeVideoModal() {
     const modal = document.getElementById("videoModal");
