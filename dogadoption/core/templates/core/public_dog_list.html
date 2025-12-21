@@ -566,7 +566,7 @@ body::before {
 
 <div class="video-gallery">
     {% for vid in dog.videos.all %}
-        <video class="video-thumb no-autoplay"
+        <video class="video-thumb"
                muted
                playsinline
                preload="metadata"
@@ -624,11 +624,12 @@ document.addEventListener("DOMContentLoaded", () => {
         /iPhone|iPad|Android|Mobile|SamsungBrowser/i.test(navigator.userAgent)
     );
 
+    console.log("isMobile:",isMobile)
     const thumbs = document.querySelectorAll(".video-thumb");
 
     if (isMobile) {
         thumbs.forEach(v => {
-            v.setAttribute("autoplay", "");
+            v.setAttribute("autoplay", true);
             v.setAttribute("loop", "");
             v.play().catch(err => {
                 console.log("Mobile autoplay blocked:", err);
