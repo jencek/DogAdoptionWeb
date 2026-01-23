@@ -582,7 +582,7 @@ class DogCreateView(CreateView):
 from django.forms import modelformset_factory
 from django.shortcuts import redirect
 #from .forms import DogUpdateForm, DogURLFormSet
-from .models import Dog, DogURL, DogVideo
+from .models import Dog, DogURL, DogVideo, DogAdditionalImages
 import datetime
 
 class DogUpdateView(LoginRequiredMixin, UpdateView):
@@ -595,6 +595,7 @@ class DogUpdateView(LoginRequiredMixin, UpdateView):
         context['MEDIA_URL'] = settings.MEDIA_URL
         context['dogurls'] = DogURL.objects.filter(dog=self.object)
         context['dogvideos'] = DogVideo.objects.filter(dog=self.object)  # NEW
+        context['dogadditionalpics'] = DogAdditionalImages.objects.filter(dog=self.object)  # NEW
         return context
 
     def get(self, request, *args, **kwargs):
@@ -667,6 +668,15 @@ class DogUpdateView(LoginRequiredMixin, UpdateView):
             print("new video:", file)
             DogVideo.objects.create(dog=self.object, file=file)
 
+        # ----------------------------
+        # Handle additional image uploads
+        # ----------------------------
+        for file in self.request.FILES.getlist('new_additional_images'):
+            print("new additional img:", file)
+            DogAdditionalImages.objects.create(dog=self.object, image=file)
+
+
+
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -684,6 +694,14 @@ from .models import DogURL
 @require_POST
 def delete_dog_image(request, image_id):
     image = get_object_or_404(DogURL, id=image_id)
+    # Optional: Add extra permission check if needed
+    image.delete()
+    return JsonResponse({'success': True})
+
+@login_required
+@require_POST
+def delete_dog_additional_image(request, image_id):
+    image = get_object_or_404(DogAdditionalImages, id=image_id)
     # Optional: Add extra permission check if needed
     image.delete()
     return JsonResponse({'success': True})

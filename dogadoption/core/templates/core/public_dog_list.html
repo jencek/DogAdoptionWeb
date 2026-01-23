@@ -544,11 +544,47 @@ body::before {
       {% if dog.image %}
         <img loading="lazy"  src="{{ dog.image.url }}" alt="{{ dog.name }} main" onclick="jumpToImage('{{ dog.id }}', 0)">
       {% endif %}
+
+<!--
       {% for extra in dog.dogurl_set.all %}
       {% if extra.image %}
       <img loading="lazy" src="{{ extra.image.url }}" alt="{{ dog.name }} extra" onclick="jumpToImage('{{ dog.id }}', {{ forloop.counter }})">
       {% endif %}
       {% endfor %}
+      
+      {% for addit in dog.dogadditionalimages_set.all %}
+      {% if addit.image %}
+      <img loading="lazy" src="{{ addit.image.url }}" alt="{{ dog.name }} extra" onclick="jumpToImage('{{ dog.id }}', {{ forloop.counter|add:'200' }})">
+      {% endif %}
+      {% endfor %}
+
+-->
+
+{% with base=dog.dogurl_set.all|length %}
+    {% for extra in dog.dogurl_set.all %}
+        {% if extra.image %}
+            <img loading="lazy"
+                 src="{{ extra.image.url }}"
+                 alt="{{ dog.name }} extra"
+                 onclick="jumpToImage('{{ dog.id }}', {{ forloop.counter }})">
+        {% endif %}
+    {% endfor %}
+
+    {% for addit in dog.dogadditionalimages_set.all %}
+        {% if addit.image %}
+            <img loading="lazy"
+                 src="{{ addit.image.url }}"
+                 alt="{{ dog.name }} extra"
+                 onclick="jumpToImage('{{ dog.id }}', {{ forloop.counter|add:base }})">
+        {% endif %}
+    {% endfor %}
+{% endwith %}
+
+
+
+
+
+
     </div>
     {% endif %}
 
@@ -660,6 +696,7 @@ function openModal(id) {
   });
 
   dogImages[id] = imgs;
+  console.log(imgs)
   currentIndex[id] = 0;
 }
 

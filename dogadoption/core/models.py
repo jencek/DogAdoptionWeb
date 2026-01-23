@@ -73,6 +73,14 @@ class DogURL(models.Model):
         return f"{self.dog.name} - {self.image.url if self.image else 'No Image'}"
 
 
+class DogAdditionalImages(models.Model):
+    dog = models.ForeignKey(Dog, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='dog_images/', blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.dog.name} - {self.image.url if self.image else 'No Image'}"
+
+
 class DogVideo(models.Model):
     dog = models.ForeignKey(Dog, related_name="videos", on_delete=models.CASCADE)
     file = models.FileField(upload_to="dog_videos/")

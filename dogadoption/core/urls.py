@@ -105,6 +105,7 @@ from . import views
 urlpatterns += [
     # existing patterns...
     path('dog-image/<int:image_id>/delete/', views.delete_dog_image, name='delete_dog_image'),
+    path('dog-image-additional/<int:image_id>/delete/', views.delete_dog_additional_image, name='delete_dog_additional_image'),
 ]
 
 from django.urls import path
