@@ -255,28 +255,37 @@ def extract_dog_data(n):
                 target_url = ""
 
             #
-            # Get Notes for dog
+            # Get Notes and additional images for dog
             #
             notes = ""
             images_list = []
+
+            # Find the gallery structure. It also contgaines notes
             gal = dog_soup.find('div',id="gallery")
             if gal:
+                # Get the notes from this area
                 gal_notes = gal.find('div', class_='fl-rich-text')
                 if gal_notes:
                     #print(gal_notes.get_text())
                     notes = gal_notes.get_text()
 
+                # Find additional images
                 gal_img = gal.find('div', class_='uabb-masonary')
                 if gal_img:
                     imgs = gal_img.find_all('div', class_="uabb-photo-gallery-content uabb-photo-gallery-link")
                     if imgs:
                         for i in imgs:
-                            #print('imgs iterator')
-                            im = i.find('img',class_='uabb-gallery-img')
-                            #print(im)
-                            if im and im.has_attr('data-src'):
+                            print('imgs iterator')
+
+                            # replace image find with <a>  find and grab the href included to point at the image
+                            #im = i.find('img',class_='uabb-gallery-img')
+                            im = i.find('a')
+
+                            print(im)
+                            #if im and im.has_attr('data-src'):
+                            if im and im.has_attr('href'):
                                 #print('has attr src')
-                                gal_url = im['data-src']
+                                gal_url = im['href']
                                 #print(gal_url)
                                 the_url = download_image_to_media_folder(gal_url, subfolder='dog_images')
                                 images_list.append(the_url)
