@@ -582,7 +582,7 @@ class DogCreateView(CreateView):
 from django.forms import modelformset_factory
 from django.shortcuts import redirect
 #from .forms import DogUpdateForm, DogURLFormSet
-from .models import Dog, DogURL, DogVideo, DogAdditionalImages
+from .models import Dog, DogURL, DogVideo, DogAdditionalImages, DogDocument
 import datetime
 
 class DogUpdateView(LoginRequiredMixin, UpdateView):
@@ -596,6 +596,8 @@ class DogUpdateView(LoginRequiredMixin, UpdateView):
         context['dogurls'] = DogURL.objects.filter(dog=self.object)
         context['dogvideos'] = DogVideo.objects.filter(dog=self.object)  # NEW
         context['dogadditionalpics'] = DogAdditionalImages.objects.filter(dog=self.object)  # NEW
+        context['dogdocuments'] = DogDocument.objects.filter(dog=self.object)  # NEW
+
         return context
 
     def get(self, request, *args, **kwargs):
@@ -675,6 +677,14 @@ class DogUpdateView(LoginRequiredMixin, UpdateView):
             print("new additional img:", file)
             DogAdditionalImages.objects.create(dog=self.object, image=file)
 
+        # ----------------------------
+        # Handle pdf (magazie extract) uploads
+        # ----------------------------
+        for file in self.request.FILES.getlist('new_dogdocuments'):
+            print("new pdf:", file)
+            DogDocument.objects.create(dog=self.object, pdf=file)
+
+
 
 
         return super().form_valid(form)
@@ -706,6 +716,14 @@ def delete_dog_additional_image(request, image_id):
     image.delete()
     return JsonResponse({'success': True})
 
+@login_required
+@require_POST
+def delete_dogdoc(request, image_id):
+    image = get_object_or_404(DogDocument, id=image_id)
+    # Optional: Add extra permission check if needed
+    image.delete()
+    return JsonResponse({'success': True})
+
 
 
 from django.views.generic import DetailView
@@ -733,6 +751,10 @@ class DogReadOnlyView( UpdateView):
             #print(url.image)
 
         context['dogurls'] = image_urls
+        context['dogvideos'] = DogVideo.objects.filter(dog=self.object)  # NEW
+        context['dogadditionalpics'] = DogAdditionalImages.objects.filter(dog=self.object)  # NEW
+        context['dogdocuments'] = DogDocument.objects.filter(dog=self.object)  # NEW
+
        
         # Add referrer to context for use in template
         context['back_url'] = self.request.session.get('previous_page', reverse_lazy('dog_list'))
@@ -1693,7 +1715,7 @@ def public_dog_list(request):
     breed = request.GET.get("breed", "")
     size = request.GET.get("size", "")
 
-    dogs = Dog.objects.filter(status="Available")
+    dogs = Dog.objects.filter(status="Available").order_by("nameext")
 
     if query:
         dogs = dogs.filter(name__icontains=query)

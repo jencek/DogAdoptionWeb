@@ -171,7 +171,7 @@
 </form>
 {% if dogurls %}
   <hr>
-  <h4>Additional Images</h4>
+  <h4>Images</h4>
   <table class="table table-bordered table-striped">
     <thead class="table-light">
       <tr>
@@ -195,6 +195,69 @@
     </tbody>
   </table>
 {% endif %}
+
+
+
+
+
+<!-- Existing Videos -->
+<h3>Videos</h3>
+<div id="dog-videos">
+    {% for vid in dogvideos %}
+        <div class="dog-video" data-id="{{ vid.id }}" style="margin:10px;">
+            <video width="250" controls preload="metadata" style="border-radius:10px;">
+                <source src="{{ vid.file.url }}">
+            </video>
+            
+        </div>
+    {% empty %}
+        <p>No videos uploaded yet.</p>
+    {% endfor %}
+</div>
+
+ 
+   <!-- Existing Additional Images -->
+    <h3>Additional Images</h3>
+    <div id="dog-additional-images">
+        {% for img in object.dogadditionalimages_set.all %}
+            <div class="dog-additional-image" data-id="{{ img.id }}" style="display:inline-block; margin:10px;">
+                <img src="{{ img.image.url }}" style="max-width:150px; max-height:150px;">
+
+            </div>
+        {% endfor %}
+    </div>
+
+
+  <!-- PDFs -->
+    <h3>Associated Documents</h3>
+    <div id="dog-pdfs">
+        {% for doc in object.documents.all %}
+            <div class="dogdocument" data-id="{{ doc.id }}" style="display:inline-block; margin:10px;">
+<iframe
+  src="{{ doc.pdf.url }}"
+  width="100%"
+  height="600"
+  loading="lazy"
+></iframe>
+
+                <a href="{{ doc.pdf.url }}" download>{{ doc.pdf }}</a>
+            </div>
+        {% endfor %}
+    </div>
+       <!-- New pdf documents (positioned after notes) -->
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 {% endblock %}

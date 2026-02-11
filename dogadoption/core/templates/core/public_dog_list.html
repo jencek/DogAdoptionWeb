@@ -465,6 +465,93 @@ body::before {
 
 
     </style>
+
+<style>
+  @media (max-width: 768px) {
+    .pdf-iframe {
+      display: none;
+    }
+    .pdf-mobile-link {
+      display: block;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .pdf-mobile-link {
+      display: none;
+    }
+  }
+</style>
+
+
+<style>
+    
+.pdf-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  background: #fafafa;
+}
+
+.pdf-card:active {
+  background: #eee;
+}
+
+.pdf-icon {
+  font-size: 2rem;
+}
+
+.pdf-title {
+  font-weight: 600;
+}
+
+.pdf-meta {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+
+
+
+
+
+.pdf-icon {
+  width: 56px;
+  height: 56px;
+  background: #d32f2f;
+  color: white;
+  font-weight: 700;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.pdf-label {
+  letter-spacing: 1px;
+}
+
+
+</style>
+
+
+
+
+
+
+
+
+
+
+
 </head>
 <body>
     <a class="custom-link" href="/" ><h2>Home</h2></a>
@@ -599,7 +686,6 @@ body::before {
 {% if dog.videos.all  %}
 
 
-
 <div class="video-gallery">
     {% for vid in dog.videos.all %}
         <video class="video-thumb"
@@ -626,8 +712,87 @@ body::before {
       <p>{{ dog.notes }}</p>
     </div>
     {% endif %}
-  </div>
+
+
+<!--
+    Include PDF documents
+-->
+{% if dog.documents.all %}
+
+   <h2>Related Publications</h2>
+
+ {% endif%}  
+
+<!--
+    <div id="dog-pdfs">
+        {% for doc in dog.documents.all %}
+            <div class="dogdocument" data-id="{{ doc.id }}" style="display:inline-block; margin:10px;">
+
+
+<iframe
+  src="{{ doc.pdf.url }}"
+  width="100%"
+  height="600"
+  loading="lazy"
+></iframe>
+                <a href="{{ doc.pdf.url }}" download>{{ doc.pdf }}</a>
+            </div>
+        {% endfor %}
+    </div>
+
+-->
+
+{% for doc in dog.documents.all %}
+  <div class="dogdocument">
+
+    <!-- Desktop / non-iOS iframe preview -->
+    <iframe
+      class="pdf-iframe"
+      src="{{ doc.pdf.url }}"
+      width="100%"
+      height="600"
+      loading="lazy">
+    </iframe>
+
+    <!-- iOS preview card -->
+    <a href="{{ doc.pdf.url }}"
+       target="_blank"
+       rel="noopener"
+       class="pdf-card ios-only">
+<!--
+      <div class="pdf-icon">📄</div>
+  -->
+      <div class="pdf-icon">
+  <span class="pdf-label">PDF</span>
 </div>
+
+
+      <div class="pdf-info">
+        <div class="pdf-title">{{ doc.title }}</div>
+        <div class="pdf-meta">Tap to open PDF</div>
+      </div>
+
+    </a>
+
+  </div>
+{% endfor %}
+
+
+
+
+<!--
+    End PDF documents
+-->
+
+
+  </div>
+
+
+
+
+
+</div>
+
 
 
     {% endfor %}
@@ -782,6 +947,31 @@ function closeVideoModal() {
     player.pause();
     modal.style.display = "none";
 }
+</script>
+
+
+<script>
+(function () {
+  const isMobile =
+    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    window.matchMedia("(pointer: coarse)").matches;
+
+  // 👉 USE #1: hide PDF iframes on mobile
+  document.querySelectorAll(".pdf-iframe").forEach(el => {
+    if (isMobile) {
+      el.style.display = "none";
+      console.log("mobile: hide iframe")
+    }
+  });
+
+  // 👉 USE #2: hide "Open PDF" links on desktop
+  document.querySelectorAll(".pdf-mobile-link").forEach(el => {
+    if (!isMobile) {
+      el.style.display = "none";
+      console.log("mobile: hide open pdf links")
+    }
+  });
+})();
 </script>
 
 

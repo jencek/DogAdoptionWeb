@@ -35,6 +35,7 @@ ALLOWED_HOSTS = ["*"]
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / STATIC_URL  # or similar absolute path
 
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 
 

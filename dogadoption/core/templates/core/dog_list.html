@@ -1,5 +1,23 @@
 {% extends 'core/base.html' %}
 {% block content %}
+<style>
+
+
+.dog-image-col {
+  width: 56px;        /* fixed column */
+  flex-shrink: 0;
+}
+
+.dog-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+
+</style>
+
 <h2>Dog List</h2>
 
 <form method="get" class="mb-4 row g-2">
@@ -59,32 +77,52 @@
 <a href="{% url 'dog_add' %}" class="btn btn-success mb-3">Add Dog</a>
 
 <ul class="list-group">
-    {% for dog in dogs %}
-    <li class="list-group-item">
-        <div class="d-flex justify-content-between align-items-center">
-            <a class="custom-link" href="{% url 'dog_readonly' dog.pk %}">
-                {{ dog.name }} - {{ dog.breed }} ({{ dog.status }})
-            </a>
-            <span>
-                <a class="btn btn-sm btn-warning" href="{% url 'dog_edit' dog.pk %}">Edit</a>
-                <a class="btn btn-sm btn-danger" href="{% url 'dog_delete' dog.pk %}">Delete</a>
-            </span>
-        </div>
+{% for dog in dogs %}
+<li class="list-group-item">
 
-        {% if dog.bonded_pair_dog %}
-        <ul style="margin-left: 20px; list-style-type: none; padding-left: 0;">
-            <li style="background-color: #f8f9fa; padding: 5px; border-radius: 4px;">
-                <a class="custom-link" href="{% url 'dog_readonly' dog.bonded_pair_dog.pk %}">
-                    Bonded pair → {{ dog.bonded_pair_dog.name }} - {{ dog.bonded_pair_dog.breed }} ({{ dog.bonded_pair_dog.status }})
-                </a>
-            </li>
-        </ul>
-        {% endif %}
+  <div class="d-flex align-items-center">
+   <!-- IMAGE column (fixed width) -->
+    <div class="dog-image-col text-left">
+      <img loading="lazy"
+           src="/media/{{ dog.image }}"
+           alt="{{ dog.name }}"
+           class="dog-thumb">
+    </div>
+    <!-- TEXT column (flexes) -->
+    <div class="flex-grow-1"> 
+        
+
+      <a class="custom-link" href="{% url 'dog_readonly' dog.pk %}">
+        {{ dog.name }} - {{ dog.breed }} ({{ dog.status }})
+      </a>
+    </div>
+
+ 
+
+    <!-- BUTTONS column (fixed) -->
+    <div class="d-flex gap-1 ms-2">
+      <a class="btn btn-sm btn-warning" href="{% url 'dog_edit' dog.pk %}">Edit</a>
+      <a class="btn btn-sm btn-danger" href="{% url 'dog_delete' dog.pk %}">Delete</a>
+    </div>
+
+  </div>
+
+  {% if dog.bonded_pair_dog %}
+  <ul class="mt-1 ms-3 list-unstyled">
+    <li class="bg-light p-1 rounded">
+      <a class="custom-link" href="{% url 'dog_readonly' dog.bonded_pair_dog.pk %}">
+        Bonded pair → {{ dog.bonded_pair_dog.name }} - {{ dog.bonded_pair_dog.breed }} ({{ dog.bonded_pair_dog.status }})
+      </a>
     </li>
-    {% empty %}
-    <li class="list-group-item">No dogs found.</li>
-    {% endfor %}
+  </ul>
+  {% endif %}
+
+</li>
+{% empty %}
+<li class="list-group-item">No dogs found.</li>
+{% endfor %}
 </ul>
+
 
 
 <nav aria-label="Page navigation">

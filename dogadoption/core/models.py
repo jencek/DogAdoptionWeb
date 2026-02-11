@@ -88,6 +88,14 @@ class DogVideo(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
+class DogDocument(models.Model):
+    dog = models.ForeignKey(Dog, on_delete=models.CASCADE, related_name="documents")
+    title = models.CharField(max_length=200)
+    pdf = models.FileField(upload_to="dog_docs/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
+
 class DogWalker(models.Model):
     STATUS_CHOICES = [('Active', 'Active'), ('Inactive', 'Inactive')]
     WALKER_CAPABILITY_CHOICES = [('Beginner <10 walks', 'Beginner <10 walks'),('General','General'), ('Experienced','Experienced'), ('KH','KH'), ('Dog Buddy', 'Dog Buddy')]
