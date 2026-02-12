@@ -275,13 +275,13 @@ def extract_dog_data(n):
                     imgs = gal_img.find_all('div', class_="uabb-photo-gallery-content uabb-photo-gallery-link")
                     if imgs:
                         for i in imgs:
-                            print('imgs iterator')
+                            #print('imgs iterator')
 
                             # replace image find with <a>  find and grab the href included to point at the image
                             #im = i.find('img',class_='uabb-gallery-img')
                             im = i.find('a')
 
-                            print(im)
+                            #print(im)
                             #if im and im.has_attr('data-src'):
                             if im and im.has_attr('href'):
                                 #print('has attr src')

@@ -1709,13 +1709,14 @@ from django.shortcuts import render
 from .models import Dog
 
 from django.db.models import Q
+from django.db.models.functions import Lower
 
 def public_dog_list(request):
     query = request.GET.get("q", "")
     breed = request.GET.get("breed", "")
     size = request.GET.get("size", "")
 
-    dogs = Dog.objects.filter(status="Available").order_by("nameext")
+    dogs = Dog.objects.filter(status="Available").order_by(Lower("nameext"))
 
     if query:
         dogs = dogs.filter(name__icontains=query)
