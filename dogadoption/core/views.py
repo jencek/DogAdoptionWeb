@@ -1711,12 +1711,15 @@ from .models import Dog
 from django.db.models import Q
 from django.db.models.functions import Lower
 
+
+
 def public_dog_list(request):
     query = request.GET.get("q", "")
     breed = request.GET.get("breed", "")
     size = request.GET.get("size", "")
 
-    dogs = Dog.objects.filter(status="Available").order_by(Lower("nameext"))
+    # Base filtered queryset
+    dogs = Dog.objects.filter(status="Available")
 
     if query:
         dogs = dogs.filter(name__icontains=query)
@@ -1725,11 +1728,21 @@ def public_dog_list(request):
     if size:
         dogs = dogs.filter(size=size)
 
+    # Get IDs of bonded partners
+    bonded_ids = dogs.exclude(
+        bonded_pair_dog__isnull=True
+    ).values_list("bonded_pair_dog_id", flat=True)
+
+    # Merge original + bonded dogs
+    dogs = Dog.objects.filter(
+        Q(pk__in=dogs.values_list("pk", flat=True)) |
+        Q(pk__in=bonded_ids)
+    ).distinct().order_by(Lower("nameext"))
+
     breeds = Dog.objects.values_list("breed", flat=True).distinct().order_by("breed")
     sizes = Dog.objects.values_list("size", flat=True).distinct().order_by("size")
 
-    # Prefetch related DogURL images
-    dogs = dogs.prefetch_related("dogurl_set",  "videos")
+    dogs = dogs.prefetch_related("dogurl_set", "videos")
 
     return render(request, "public_dog_list.html", {
         "dogs": dogs,
@@ -1739,6 +1752,7 @@ def public_dog_list(request):
         "breeds": breeds,
         "sizes": sizes,
     })
+
 
 
 

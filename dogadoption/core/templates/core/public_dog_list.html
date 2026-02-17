@@ -463,6 +463,37 @@ body::before {
     box-sizing: border-box;
 }
 
+.bonded-card {
+  display: block;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-left: 4px solid #0d6efd;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s ease;
+}
+
+.bonded-card:hover {
+  background: #e9ecef;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+
+.list-group-item:target {
+  animation: highlight 1.5s ease;
+  background-color: #fff3cd;
+}
+
+@keyframes highlight {
+  from { background-color: #fff3cd; }
+  to { background-color: inherit; }
+}
+
+
 
     </style>
 
@@ -590,6 +621,7 @@ body::before {
  <!-- Dog Cards -->
 <div class="dog-grid">
     {% for dog in dogs %}
+    <li class="list-group-item" id="dog-{{ dog.pk }}">
     <div class="dog-card" onclick="openModal({{ dog.id }})">
         {% if dog.image %}
             <img loading="lazy"  src="{{ dog.image.url }}" alt="{{ dog.name }}">
@@ -599,6 +631,19 @@ body::before {
         <h3>{{ dog.name }}</h3>
         <p>{{ dog.breed }} - {{ dog.size }}</p>
         <p>Age: {{ dog.age }}</p>
+
+         {% if dog.bonded_pair_dog %}
+      
+      <a class="bonded-card"
+   href="#dog-{{ dog.bonded_pair_dog.pk }}"    onclick="event.stopPropagation();">   
+   <div>
+      <strong>🐾 Bonded Pair</strong><br>
+      ❤️ Bonded with {{ dog.bonded_pair_dog.name }} – {{ dog.bonded_pair_dog.breed }}
+      <span class="text-muted">({{ dog.bonded_pair_dog.status }})</span>
+   </div>
+</a>
+  
+        {% endif %}
     </div>
 
     <!-- Modal for this dog -->
