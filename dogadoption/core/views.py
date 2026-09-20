@@ -327,6 +327,12 @@ def full_snapshot_dogs(request):
                 log_entry = f"[{datetime.now()}] Updated dog {dog.nameext}: {details}"
                 print(f"**************** {log_entry} *************")
 
+
+                # add to the notification log
+                add_remove_log += log_entry + "\n"
+
+                # capture for overall event logging
+
                 action_log += log_entry + "\n"
                 append_to_change_log(dog, log_entry)
                 dog.save(update_fields=["change_log"])
